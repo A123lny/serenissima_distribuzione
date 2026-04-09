@@ -22,7 +22,7 @@ export function AuthProvider({ children }) {
   const login = async (codice) => {
     const { data, error } = await supabase
       .from('codici_accesso')
-      .select('*, corrieri(*)')
+      .select('*')
       .eq('codice', codice)
       .eq('attivo', true)
       .single()
@@ -31,12 +31,22 @@ export function AuthProvider({ children }) {
       throw new Error('Codice non valido')
     }
 
+    let corriere = null
+    if (data.corriere_id) {
+      const { data: c } = await supabase
+        .from('corrieri')
+        .select('*')
+        .eq('id', data.corriere_id)
+        .single()
+      corriere = c
+    }
+
     const utenteData = {
       id: data.id,
       ruolo: data.ruolo,
       corriere_id: data.corriere_id,
-      corriere: data.corrieri,
-      nome: data.ruolo === 'admin' ? 'Amministratore' : data.corrieri?.nome || 'Corriere',
+      corriere,
+      nome: data.ruolo === 'admin' ? 'Amministratore' : corriere?.nome || 'Corriere',
     }
 
     localStorage.setItem('gest_auth', JSON.stringify(utenteData))

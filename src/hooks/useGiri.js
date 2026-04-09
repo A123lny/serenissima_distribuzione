@@ -9,29 +9,59 @@ export function useGiri(corriereId = null) {
     setLoading(true)
     let query = supabase
       .from('giri')
-      .select('*, corrieri(nome), localita(*)')
+      .select('*, corrieri(nome)')
       .eq('attivo', true)
-      .order('numero_giro')
+      .order('nome_giro')
 
     if (corriereId) {
       query = query.eq('corriere_id', corriereId)
     }
 
-    const { data, error } = await query
-    if (!error) {
-      const giriOrdinati = data.map(giro => ({
-        ...giro,
-        localita: (giro.localita || [])
-          .filter(l => l.attivo)
-          .sort((a, b) => a.ordine - b.ordine),
+    const { data: giriData, error } = await query
+    if (error) { setLoading(false); return }
+
+    // Per ogni giro, carica zone e localita
+    const giriCompleti = await Promise.all((giriData || []).map(async (giro) => {
+      // Carica zone del giro
+      const { data: zoneData } = await supabase
+        .from('zone')
+        .select('*')
+        .eq('giro_id', giro.id)
+        .eq('attivo', true)
+        .order('ordine')
+
+      // Carica localita del giro (con zona_id)
+      const { data: locData } = await supabase
+        .from('localita')
+        .select('*')
+        .eq('giro_id', giro.id)
+        .eq('attivo', true)
+        .order('ordine')
+
+      // Raggruppa localita per zona
+      const zoneConLocalita = (zoneData || []).map(zona => ({
+        ...zona,
+        localita: (locData || []).filter(l => l.zona_id === zona.id),
       }))
-      setGiri(giriOrdinati)
-    }
+
+      // Localita senza zona (retrocompatibilita)
+      const localitaSenzaZona = (locData || []).filter(l => !l.zona_id)
+
+      return {
+        ...giro,
+        zone: zoneConLocalita,
+        localitaSenzaZona,
+        tutteLocalita: locData || [],
+      }
+    }))
+
+    setGiri(giriCompleti)
     setLoading(false)
   }, [corriereId])
 
   useEffect(() => { fetchGiri() }, [fetchGiri])
 
+  // === GIRI ===
   const addGiro = async (giroData) => {
     const { error } = await supabase.from('giri').insert(giroData)
     if (!error) await fetchGiri()
@@ -50,6 +80,32 @@ export function useGiri(corriereId = null) {
     return { error }
   }
 
+  const assegnaCorriere = async (giroId, corriereIdNew) => {
+    const { error } = await supabase.from('giri').update({ corriere_id: corriereIdNew || null }).eq('id', giroId)
+    if (!error) await fetchGiri()
+    return { error }
+  }
+
+  // === ZONE ===
+  const addZona = async (zonaData) => {
+    const { error } = await supabase.from('zone').insert(zonaData)
+    if (!error) await fetchGiri()
+    return { error }
+  }
+
+  const updateZona = async (id, updates) => {
+    const { error } = await supabase.from('zone').update(updates).eq('id', id)
+    if (!error) await fetchGiri()
+    return { error }
+  }
+
+  const deleteZona = async (id) => {
+    const { error } = await supabase.from('zone').update({ attivo: false }).eq('id', id)
+    if (!error) await fetchGiri()
+    return { error }
+  }
+
+  // === LOCALITA ===
   const addLocalita = async (localitaData) => {
     const { error } = await supabase.from('localita').insert(localitaData)
     if (!error) await fetchGiri()
@@ -76,9 +132,18 @@ export function useGiri(corriereId = null) {
     await fetchGiri()
   }
 
+  const riordinaZone = async (zoneIds) => {
+    const updates = zoneIds.map((id, index) =>
+      supabase.from('zone').update({ ordine: index }).eq('id', id)
+    )
+    await Promise.all(updates)
+    await fetchGiri()
+  }
+
   return {
     giri, loading, fetchGiri,
-    addGiro, updateGiro, deleteGiro,
+    addGiro, updateGiro, deleteGiro, assegnaCorriere,
+    addZona, updateZona, deleteZona, riordinaZone,
     addLocalita, updateLocalita, deleteLocalita, riordinaLocalita,
   }
 }

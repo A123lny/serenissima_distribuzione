@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
+import { HashRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider, useAuth } from './context/AuthContext'
 import Navbar from './components/Layout/Navbar'
 import BottomNav from './components/Layout/BottomNav'
@@ -55,9 +55,9 @@ function BottomNavWrapper() {
 export default function App() {
   return (
     <AuthProvider>
-      <BrowserRouter>
+      <HashRouter>
         <AppLayout />
-      </BrowserRouter>
+      </HashRouter>
     </AuthProvider>
   )
 }

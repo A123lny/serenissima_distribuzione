@@ -15,7 +15,7 @@ export default function ConsegnaPage() {
   const [fase, setFase] = useState('preparazione')
   const [corrieri, setCorrieri] = useState([])
   const [giriDisponibili, setGiriDisponibili] = useState([])
-  const [zone, setZone] = useState([])
+  const [zoneGiro, setZoneGiro] = useState([])
 
   // Form preparazione
   const [selCorriere, setSelCorriere] = useState('')
@@ -28,12 +28,10 @@ export default function ConsegnaPage() {
   const [noteSessione, setNoteSessione] = useState('')
   const [rimanenzeOggi, setRimanenzeOggi] = useState({})
 
-  // Nota modale
+  // Modali
   const [showNotaModal, setShowNotaModal] = useState(false)
   const [notaConsegnaId, setNotaConsegnaId] = useState(null)
   const [notaText, setNotaText] = useState('')
-
-  // Modale conferma fine
   const [showConfirmFine, setShowConfirmFine] = useState(false)
 
   useEffect(() => {
@@ -57,7 +55,7 @@ export default function ConsegnaPage() {
     }
   }, [sessione])
 
-  // Carica giri assegnati al corriere selezionato
+  // Carica giri assegnati al corriere
   useEffect(() => {
     if (selCorriere) {
       supabase
@@ -70,37 +68,42 @@ export default function ConsegnaPage() {
     }
   }, [selCorriere])
 
-  // Carica zone e localita quando si seleziona giro
+  // Carica zone e localita del giro selezionato
   useEffect(() => {
     if (!selGiro) return
 
     const loadGiroData = async () => {
-      // Carica zone
-      const { data: zoneData } = await supabase
-        .from('zone')
-        .select('*')
+      // Carica zone collegate al giro
+      const { data: gzData } = await supabase
+        .from('giri_zone')
+        .select('*, zone(*)')
         .eq('giro_id', selGiro)
-        .eq('attivo', true)
         .order('ordine')
 
-      setZone(zoneData || [])
+      const zoneList = (gzData || []).map(gz => gz.zone).filter(Boolean)
+      const zoneIds = zoneList.map(z => z.id)
+      setZoneGiro(zoneList)
 
-      // Carica tutte le localita del giro
-      const { data: locData } = await supabase
-        .from('localita')
-        .select('*')
-        .eq('giro_id', selGiro)
-        .eq('attivo', true)
-        .order('ordine')
+      // Carica localita di quelle zone
+      if (zoneIds.length > 0) {
+        const { data: locData } = await supabase
+          .from('localita')
+          .select('*')
+          .in('zona_id', zoneIds)
+          .eq('attivo', true)
+          .order('ordine')
 
-      if (locData) {
-        setPrepData(locData.map(l => ({
-          localita_id: l.id,
-          nome: l.nome_locale,
-          zona_id: l.zona_id,
-          copie_consegnate: l.copie_standard || 0,
-          rimanenze_ieri: 0,
-        })))
+        if (locData) {
+          setPrepData(locData.map(l => ({
+            localita_id: l.id,
+            nome: l.nome_locale,
+            zona_id: l.zona_id,
+            copie_consegnate: l.copie_standard || 0,
+            rimanenze_ieri: 0,
+          })))
+        }
+      } else {
+        setPrepData([])
       }
     }
 
@@ -116,10 +119,6 @@ export default function ConsegnaPage() {
     }
   }
 
-  const handleFineConsegne = () => {
-    setShowConfirmFine(true)
-  }
-
   const confermaFine = () => {
     ferma()
     setShowConfirmFine(false)
@@ -130,11 +129,7 @@ export default function ConsegnaPage() {
   }
 
   const handleSalvaRiepilogo = async () => {
-    await terminaSessione(
-      parseFloat(kmPercorsi) || 0,
-      rimanenzeOggi,
-      noteSessione
-    )
+    await terminaSessione(parseFloat(kmPercorsi) || 0, rimanenzeOggi, noteSessione)
     setFase('preparazione')
     setSelGiro('')
     setPrepData([])
@@ -149,38 +144,29 @@ export default function ConsegnaPage() {
   }
 
   const salvaNota = async () => {
-    if (notaConsegnaId) {
-      await aggiungiNota(notaConsegnaId, notaText)
-    }
+    if (notaConsegnaId) await aggiungiNota(notaConsegnaId, notaText)
     setShowNotaModal(false)
   }
 
   const apriMaps = (indirizzo) => {
-    const url = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(indirizzo)}`
-    window.open(url, '_blank')
+    window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(indirizzo)}`, '_blank')
   }
 
-  // Helper: raggruppa per zona
+  // Raggruppa items per zona
   const raggruppaPerZona = (items) => {
     const grouped = []
-
-    // Prima le zone in ordine
-    for (const zona of zone) {
-      const itemsZona = items.filter(i => i.zona_id === zona.id || i.localita?.zona_id === zona.id)
-      if (itemsZona.length > 0) {
-        grouped.push({ zona, items: itemsZona })
-      }
+    for (const zona of zoneGiro) {
+      const itemsZona = items.filter(i => {
+        const zid = i.zona_id || i.localita?.zona_id
+        return zid === zona.id
+      })
+      if (itemsZona.length > 0) grouped.push({ zona, items: itemsZona })
     }
-
-    // Poi items senza zona
     const senzaZona = items.filter(i => {
       const zid = i.zona_id || i.localita?.zona_id
-      return !zid
+      return !zid || !zoneGiro.some(z => z.id === zid)
     })
-    if (senzaZona.length > 0) {
-      grouped.push({ zona: null, items: senzaZona })
-    }
-
+    if (senzaZona.length > 0) grouped.push({ zona: null, items: senzaZona })
     return grouped
   }
 
@@ -192,7 +178,6 @@ export default function ConsegnaPage() {
       <div className="p-4 pb-24 space-y-4">
         <h2 className="text-2xl font-bold text-gray-900">Prepara Consegne</h2>
 
-        {/* Selezione corriere (solo admin) */}
         {isAdmin && (
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Corriere</label>
@@ -207,7 +192,6 @@ export default function ConsegnaPage() {
           </div>
         )}
 
-        {/* Selezione giro */}
         {selCorriere && (
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Giro</label>
@@ -225,7 +209,6 @@ export default function ConsegnaPage() {
           </div>
         )}
 
-        {/* Veicolo */}
         {selGiro && (
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Veicolo</label>
@@ -238,7 +221,6 @@ export default function ConsegnaPage() {
           </div>
         )}
 
-        {/* Localita raggruppate per zona */}
         {prepData.length > 0 && (
           <div className="space-y-4">
             {prepPerZona.map((gruppo, gi) => (
@@ -248,9 +230,6 @@ export default function ConsegnaPage() {
                     <MapPinned size={16} className="text-amber-600" />
                     <h3 className="font-semibold text-gray-900">{gruppo.zona.nome_zona}</h3>
                   </div>
-                )}
-                {!gruppo.zona && prepPerZona.length > 1 && (
-                  <h3 className="font-semibold text-gray-900 mb-2">Altre localita</h3>
                 )}
                 <div className="space-y-3">
                   {gruppo.items.map((item) => {
@@ -262,28 +241,22 @@ export default function ConsegnaPage() {
                           <div>
                             <label className="text-xs text-gray-500">Rimanenze ieri</label>
                             <input
-                              type="number"
-                              min={0}
+                              type="number" min={0}
                               className="w-full border border-gray-200 rounded-lg px-3 py-2 text-base focus:border-blue-500 focus:outline-none"
                               value={item.rimanenze_ieri}
                               onChange={e => {
-                                const newData = [...prepData]
-                                newData[idx].rimanenze_ieri = parseInt(e.target.value) || 0
-                                setPrepData(newData)
+                                const d = [...prepData]; d[idx].rimanenze_ieri = parseInt(e.target.value) || 0; setPrepData(d)
                               }}
                             />
                           </div>
                           <div>
                             <label className="text-xs text-gray-500">Copie da consegnare</label>
                             <input
-                              type="number"
-                              min={0}
+                              type="number" min={0}
                               className="w-full border border-gray-200 rounded-lg px-3 py-2 text-base focus:border-blue-500 focus:outline-none"
                               value={item.copie_consegnate}
                               onChange={e => {
-                                const newData = [...prepData]
-                                newData[idx].copie_consegnate = parseInt(e.target.value) || 0
-                                setPrepData(newData)
+                                const d = [...prepData]; d[idx].copie_consegnate = parseInt(e.target.value) || 0; setPrepData(d)
                               }}
                             />
                           </div>
@@ -297,17 +270,9 @@ export default function ConsegnaPage() {
           </div>
         )}
 
-        {/* Bottone inizia */}
         {prepData.length > 0 && (
-          <Button
-            size="lg"
-            variant="success"
-            className="w-full flex items-center justify-center gap-3 text-xl"
-            onClick={handleIniziaConsegne}
-            disabled={loading}
-          >
-            <Play size={28} />
-            INIZIA CONSEGNE
+          <Button size="lg" variant="success" className="w-full flex items-center justify-center gap-3 text-xl" onClick={handleIniziaConsegne} disabled={loading}>
+            <Play size={28} />INIZIA CONSEGNE
           </Button>
         )}
       </div>
@@ -317,13 +282,10 @@ export default function ConsegnaPage() {
   // === FASE CONSEGNA ===
   if (fase === 'consegna') {
     const completate = consegne.filter(c => c.consegnato).length
-
-    // Raggruppa consegne per zona
     const consegnePerZona = raggruppaPerZona(consegne)
 
     return (
       <div className="pb-24">
-        {/* Timer sticky */}
         <div className="sticky top-[52px] z-30 bg-blue-700 text-white px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Clock size={20} />
@@ -332,7 +294,6 @@ export default function ConsegnaPage() {
           <span className="text-sm opacity-80">{completate}/{consegne.length} consegnate</span>
         </div>
 
-        {/* Lista consegne raggruppate */}
         <div className="p-4 space-y-4">
           {consegnePerZona.map((gruppo, gi) => (
             <div key={gi}>
@@ -346,53 +307,29 @@ export default function ConsegnaPage() {
                 </div>
               )}
               <div className="space-y-3">
-                {gruppo.items.map((consegna) => (
-                  <div
-                    key={consegna.id}
-                    className={`border-2 rounded-xl p-4 transition-colors ${
-                      consegna.consegnato
-                        ? 'border-green-300 bg-green-50'
-                        : 'border-gray-200 bg-white'
-                    }`}
-                  >
+                {gruppo.items.map(consegna => (
+                  <div key={consegna.id} className={`border-2 rounded-xl p-4 transition-colors ${consegna.consegnato ? 'border-green-300 bg-green-50' : 'border-gray-200 bg-white'}`}>
                     <div className="flex items-start justify-between">
                       <div className="flex items-start gap-3">
-                        <button
-                          onClick={() => !consegna.consegnato && segnaConsegnata(consegna.id)}
-                          className="mt-0.5"
-                        >
-                          {consegna.consegnato ? (
-                            <CheckCircle2 size={28} className="text-green-600" />
-                          ) : (
-                            <Circle size={28} className="text-gray-300" />
-                          )}
+                        <button onClick={() => !consegna.consegnato && segnaConsegnata(consegna.id)} className="mt-0.5">
+                          {consegna.consegnato ? <CheckCircle2 size={28} className="text-green-600" /> : <Circle size={28} className="text-gray-300" />}
                         </button>
                         <div>
                           <p className={`font-medium ${consegna.consegnato ? 'text-green-800 line-through' : 'text-gray-900'}`}>
                             {consegna.localita?.nome_locale}
                           </p>
-                          {consegna.localita?.indirizzo && (
-                            <p className="text-sm text-gray-500">{consegna.localita.indirizzo}</p>
-                          )}
+                          {consegna.localita?.indirizzo && <p className="text-sm text-gray-500">{consegna.localita.indirizzo}</p>}
                           <p className="text-xs text-blue-600 mt-1">{consegna.copie_consegnate} copie</p>
-                          {consegna.note && (
-                            <p className="text-xs text-amber-600 mt-1 italic">{consegna.note}</p>
-                          )}
+                          {consegna.note && <p className="text-xs text-amber-600 mt-1 italic">{consegna.note}</p>}
                         </div>
                       </div>
                       <div className="flex gap-1">
                         {consegna.localita?.indirizzo && (
-                          <button
-                            onClick={() => apriMaps(consegna.localita.indirizzo)}
-                            className="p-2 hover:bg-blue-50 rounded-lg text-blue-600"
-                          >
+                          <button onClick={() => apriMaps(consegna.localita.indirizzo)} className="p-2 hover:bg-blue-50 rounded-lg text-blue-600">
                             <Navigation size={20} />
                           </button>
                         )}
-                        <button
-                          onClick={() => apriNota(consegna.id, consegna.note)}
-                          className="p-2 hover:bg-gray-100 rounded-lg text-gray-500"
-                        >
+                        <button onClick={() => apriNota(consegna.id, consegna.note)} className="p-2 hover:bg-gray-100 rounded-lg text-gray-500">
                           <MessageSquare size={20} />
                         </button>
                       </div>
@@ -404,35 +341,19 @@ export default function ConsegnaPage() {
           ))}
         </div>
 
-        {/* Bottone fine */}
         <div className="fixed bottom-20 left-0 right-0 p-4">
-          <Button
-            size="lg"
-            variant="danger"
-            className="w-full flex items-center justify-center gap-3 text-xl shadow-lg"
-            onClick={handleFineConsegne}
-          >
-            <Square size={28} />
-            FINE CONSEGNE
+          <Button size="lg" variant="danger" className="w-full flex items-center justify-center gap-3 text-xl shadow-lg" onClick={() => setShowConfirmFine(true)}>
+            <Square size={28} />FINE CONSEGNE
           </Button>
         </div>
 
-        {/* Modale nota */}
         <Modal isOpen={showNotaModal} onClose={() => setShowNotaModal(false)} title="Nota rapida">
           <div className="space-y-4">
-            <textarea
-              className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 focus:border-blue-500 focus:outline-none"
-              value={notaText}
-              onChange={e => setNotaText(e.target.value)}
-              rows={3}
-              placeholder="Aggiungi una nota..."
-              autoFocus
-            />
+            <textarea className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 focus:border-blue-500 focus:outline-none" value={notaText} onChange={e => setNotaText(e.target.value)} rows={3} placeholder="Aggiungi una nota..." autoFocus />
             <Button className="w-full" onClick={salvaNota}>Salva Nota</Button>
           </div>
         </Modal>
 
-        {/* Modale conferma fine */}
         <Modal isOpen={showConfirmFine} onClose={() => setShowConfirmFine(false)} title="Conferma fine consegne">
           <div className="space-y-4">
             <p className="text-gray-600">
@@ -467,29 +388,14 @@ export default function ConsegnaPage() {
 
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-1">Km percorsi</label>
-        <input
-          type="number"
-          step="0.1"
-          min={0}
-          className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 text-base focus:border-blue-500 focus:outline-none"
-          value={kmPercorsi}
-          onChange={e => setKmPercorsi(e.target.value)}
-          placeholder="Es. 25.5"
-        />
+        <input type="number" step="0.1" min={0} className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 text-base focus:border-blue-500 focus:outline-none" value={kmPercorsi} onChange={e => setKmPercorsi(e.target.value)} placeholder="Es. 25.5" />
       </div>
 
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-1">Note sessione</label>
-        <textarea
-          className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 focus:border-blue-500 focus:outline-none"
-          value={noteSessione}
-          onChange={e => setNoteSessione(e.target.value)}
-          rows={2}
-          placeholder="Note opzionali..."
-        />
+        <textarea className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 focus:border-blue-500 focus:outline-none" value={noteSessione} onChange={e => setNoteSessione(e.target.value)} rows={2} placeholder="Note opzionali..." />
       </div>
 
-      {/* Rimanenze odierne raggruppate per zona */}
       <div className="space-y-4">
         <h3 className="font-semibold text-gray-900">Rimanenze di oggi</h3>
         {riepilogoPerZona.map((gruppo, gi) => (
@@ -501,23 +407,13 @@ export default function ConsegnaPage() {
               </div>
             )}
             <div className="space-y-2">
-              {gruppo.items.map((consegna) => (
+              {gruppo.items.map(consegna => (
                 <div key={consegna.id} className="bg-white border border-gray-200 rounded-xl p-3">
                   <p className="font-medium text-gray-900 mb-2">{consegna.localita?.nome_locale}</p>
                   <div className="flex items-center gap-3">
                     <span className="text-sm text-gray-500">Consegnate: {consegna.copie_consegnate}</span>
                     <div className="flex-1">
-                      <input
-                        type="number"
-                        min={0}
-                        className="w-full border border-gray-200 rounded-lg px-3 py-2 text-base focus:border-blue-500 focus:outline-none"
-                        value={rimanenzeOggi[consegna.id] || 0}
-                        onChange={e => setRimanenzeOggi({
-                          ...rimanenzeOggi,
-                          [consegna.id]: parseInt(e.target.value) || 0
-                        })}
-                        placeholder="Rimanenze"
-                      />
+                      <input type="number" min={0} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-base focus:border-blue-500 focus:outline-none" value={rimanenzeOggi[consegna.id] || 0} onChange={e => setRimanenzeOggi({ ...rimanenzeOggi, [consegna.id]: parseInt(e.target.value) || 0 })} />
                     </div>
                   </div>
                 </div>
@@ -527,14 +423,8 @@ export default function ConsegnaPage() {
         ))}
       </div>
 
-      <Button
-        size="lg"
-        variant="success"
-        className="w-full flex items-center justify-center gap-3 text-xl"
-        onClick={handleSalvaRiepilogo}
-      >
-        <Save size={28} />
-        Salva e Chiudi
+      <Button size="lg" variant="success" className="w-full flex items-center justify-center gap-3 text-xl" onClick={handleSalvaRiepilogo}>
+        <Save size={28} />Salva e Chiudi
       </Button>
     </div>
   )

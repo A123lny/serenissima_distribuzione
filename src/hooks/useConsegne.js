@@ -42,41 +42,30 @@ export function useConsegne() {
     return { data: { sessione: sess, consegne: cons } }
   }
 
-  const segnaConsegnata = async (consegnaId) => {
+  const aggiornaConsegna = async (consegnaId, updates) => {
     const { error } = await supabase
       .from('consegne_giornaliere')
-      .update({
-        consegnato: true,
-        ora_consegna: new Date().toISOString(),
-      })
+      .update(updates)
       .eq('id', consegnaId)
 
     if (!error) {
       setConsegne(prev =>
-        prev.map(c => c.id === consegnaId
-          ? { ...c, consegnato: true, ora_consegna: new Date().toISOString() }
-          : c
-        )
+        prev.map(c => c.id === consegnaId ? { ...c, ...updates } : c)
       )
     }
     return { error }
   }
 
-  const aggiungiNota = async (consegnaId, note) => {
-    const { error } = await supabase
-      .from('consegne_giornaliere')
-      .update({ note })
-      .eq('id', consegnaId)
-
-    if (!error) {
-      setConsegne(prev =>
-        prev.map(c => c.id === consegnaId ? { ...c, note } : c)
-      )
+  const completaFermata = async (consegnaId, resiRitirati) => {
+    const updates = {
+      consegnato: true,
+      ora_consegna: new Date().toISOString(),
+      resi_ritirati: resiRitirati || 0,
     }
-    return { error }
+    return aggiornaConsegna(consegnaId, updates)
   }
 
-  const terminaSessione = async (kmPercorsi, rimanenzeOggi, noteSessione) => {
+  const terminaSessione = async (kmPercorsi, noteSessione) => {
     if (!sessione) return { error: 'Nessuna sessione attiva' }
 
     const fine = new Date()
@@ -95,23 +84,16 @@ export function useConsegne() {
 
     if (errSess) return { error: errSess }
 
-    // Aggiorna rimanenze per ogni consegna
-    for (const [consegnaId, rimanenze] of Object.entries(rimanenzeOggi)) {
-      await supabase
-        .from('consegne_giornaliere')
-        .update({ rimanenze_oggi: rimanenze })
-        .eq('id', consegnaId)
-
-      // Salva nello storico
-      const consegna = consegne.find(c => c.id === consegnaId)
-      if (consegna) {
+    // Salva nello storico rimanenze
+    for (const consegna of consegne) {
+      if (consegna.consegnato) {
         await supabase
           .from('storico_rimanenze')
           .upsert({
             localita_id: consegna.localita_id,
             data: new Date().toISOString().split('T')[0],
             copie_consegnate: consegna.copie_consegnate,
-            rimanenze: rimanenze,
+            rimanenze: consegna.resi_ritirati || 0,
           }, { onConflict: 'localita_id,data' })
       }
     }
@@ -144,7 +126,7 @@ export function useConsegne() {
 
   return {
     sessione, consegne, loading,
-    iniziaSessione, segnaConsegnata, aggiungiNota, terminaSessione,
+    iniziaSessione, aggiornaConsegna, completaFermata, terminaSessione,
     caricaSessioneAttiva,
   }
 }

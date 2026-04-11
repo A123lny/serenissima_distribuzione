@@ -19,16 +19,17 @@ export function AuthProvider({ children }) {
     setLoading(false)
   }, [])
 
-  const login = async (codice) => {
+  const login = async (username, password) => {
     const { data, error } = await supabase
       .from('codici_accesso')
       .select('*')
-      .eq('codice', codice)
+      .eq('username', username)
+      .eq('password', password)
       .eq('attivo', true)
       .single()
 
     if (error || !data) {
-      throw new Error('Codice non valido')
+      throw new Error('Credenziali non valide')
     }
 
     let corriere = null
@@ -46,7 +47,7 @@ export function AuthProvider({ children }) {
       ruolo: data.ruolo,
       corriere_id: data.corriere_id,
       corriere,
-      nome: data.ruolo === 'admin' ? 'Amministratore' : corriere?.nome || 'Corriere',
+      nome: data.ruolo === 'admin' ? 'Amministratore' : corriere?.nome || 'Utente',
     }
 
     localStorage.setItem('gest_auth', JSON.stringify(utenteData))

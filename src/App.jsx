@@ -8,6 +8,7 @@ import GiriPage from './pages/GiriPage'
 import ConsegnaPage from './pages/ConsegnaPage'
 import StoricoPage from './pages/StoricoPage'
 import ReportPage from './pages/ReportPage'
+import UtentiPage from './pages/UtentiPage'
 
 function ProtectedRoute({ children, adminOnly = false }) {
   const { utente, loading, isAdmin } = useAuth()
@@ -37,6 +38,7 @@ function AppLayout() {
           <Route path="/consegna" element={<ProtectedRoute><ConsegnaPage /></ProtectedRoute>} />
           <Route path="/storico" element={<ProtectedRoute><StoricoPage /></ProtectedRoute>} />
           <Route path="/report" element={<ProtectedRoute adminOnly><ReportPage /></ProtectedRoute>} />
+          <Route path="/utenti" element={<ProtectedRoute adminOnly><UtentiPage /></ProtectedRoute>} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>

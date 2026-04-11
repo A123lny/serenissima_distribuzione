@@ -10,8 +10,8 @@ import StoricoPage from './pages/StoricoPage'
 import ReportPage from './pages/ReportPage'
 import UtentiPage from './pages/UtentiPage'
 
-function ProtectedRoute({ children, adminOnly = false }) {
-  const { utente, loading, isAdmin } = useAuth()
+function ProtectedRoute({ children, permesso }) {
+  const { utente, loading, haPermesso } = useAuth()
 
   if (loading) {
     return (
@@ -22,7 +22,7 @@ function ProtectedRoute({ children, adminOnly = false }) {
   }
 
   if (!utente) return <Navigate to="/login" replace />
-  if (adminOnly && !isAdmin) return <Navigate to="/" replace />
+  if (permesso && !haPermesso(permesso)) return <Navigate to="/" replace />
 
   return children
 }
@@ -34,11 +34,11 @@ function AppLayout() {
       <main className="max-w-2xl mx-auto">
         <Routes>
           <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-          <Route path="/giri" element={<ProtectedRoute adminOnly><GiriPage /></ProtectedRoute>} />
-          <Route path="/consegna" element={<ProtectedRoute><ConsegnaPage /></ProtectedRoute>} />
-          <Route path="/storico" element={<ProtectedRoute><StoricoPage /></ProtectedRoute>} />
-          <Route path="/report" element={<ProtectedRoute adminOnly><ReportPage /></ProtectedRoute>} />
-          <Route path="/utenti" element={<ProtectedRoute adminOnly><UtentiPage /></ProtectedRoute>} />
+          <Route path="/giri" element={<ProtectedRoute permesso="giri"><GiriPage /></ProtectedRoute>} />
+          <Route path="/consegna" element={<ProtectedRoute permesso="consegne"><ConsegnaPage /></ProtectedRoute>} />
+          <Route path="/storico" element={<ProtectedRoute permesso="storico"><StoricoPage /></ProtectedRoute>} />
+          <Route path="/report" element={<ProtectedRoute permesso="report"><ReportPage /></ProtectedRoute>} />
+          <Route path="/utenti" element={<ProtectedRoute permesso="utenti"><UtentiPage /></ProtectedRoute>} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>

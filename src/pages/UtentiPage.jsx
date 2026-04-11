@@ -1,9 +1,18 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
-import { Plus, Edit2, Trash2, Eye, EyeOff, User, Shield } from 'lucide-react'
+import { Plus, Edit2, Trash2, Eye, EyeOff, User, Shield, CheckSquare, Square } from 'lucide-react'
 import Button from '../components/UI/Button'
 import Modal from '../components/UI/Modal'
 import Badge from '../components/UI/Badge'
+
+const PERMESSI_DISPONIBILI = [
+  { id: 'dashboard', label: 'Dashboard', desc: 'Home con riepilogo' },
+  { id: 'giri', label: 'Gestione Giri', desc: 'Crea e modifica zone, giri, localita' },
+  { id: 'consegne', label: 'Consegne', desc: 'Effettua le consegne' },
+  { id: 'storico', label: 'Storico', desc: 'Vedi storico rimanenze' },
+  { id: 'report', label: 'Report', desc: 'Report spese e km' },
+  { id: 'utenti', label: 'Gestione Utenti', desc: 'Crea e modifica utenti' },
+]
 
 export default function UtentiPage() {
   const [utenti, setUtenti] = useState([])
@@ -18,11 +27,10 @@ export default function UtentiPage() {
     password: '',
     ruolo: 'corriere',
     corriere_id: '',
+    permessi: ['dashboard', 'consegne'],
   })
 
-  useEffect(() => {
-    fetchData()
-  }, [])
+  useEffect(() => { fetchData() }, [])
 
   const fetchData = async () => {
     setLoading(true)
@@ -31,14 +39,9 @@ export default function UtentiPage() {
       .select('*, corrieri(nome)')
       .eq('attivo', true)
       .order('ruolo')
-
     if (ut) setUtenti(ut)
 
-    const { data: corr } = await supabase
-      .from('corrieri')
-      .select('*')
-      .eq('attivo', true)
-
+    const { data: corr } = await supabase.from('corrieri').select('*').eq('attivo', true)
     if (corr) setCorrieri(corr)
     setLoading(false)
   }
@@ -51,12 +54,29 @@ export default function UtentiPage() {
         password: utente.password || '',
         ruolo: utente.ruolo,
         corriere_id: utente.corriere_id || '',
+        permessi: utente.permessi || [],
       })
     } else {
       setEditing(null)
-      setForm({ username: '', password: '', ruolo: 'corriere', corriere_id: '' })
+      setForm({ username: '', password: '', ruolo: 'corriere', corriere_id: '', permessi: ['dashboard', 'consegne'] })
     }
     setShowModal(true)
+  }
+
+  const togglePermesso = (id) => {
+    setForm(prev => ({
+      ...prev,
+      permessi: prev.permessi.includes(id)
+        ? prev.permessi.filter(p => p !== id)
+        : [...prev.permessi, id],
+    }))
+  }
+
+  const handleSelectAll = () => {
+    setForm(prev => ({
+      ...prev,
+      permessi: PERMESSI_DISPONIBILI.map(p => p.id),
+    }))
   }
 
   const handleSave = async () => {
@@ -68,6 +88,7 @@ export default function UtentiPage() {
       ruolo: form.ruolo,
       corriere_id: form.corriere_id || null,
       codice: form.username.trim().toUpperCase(),
+      permessi: form.permessi,
     }
 
     if (editing) {
@@ -132,9 +153,20 @@ export default function UtentiPage() {
                   {u.corrieri?.nome && (
                     <p className="text-sm text-gray-500 mt-1">Corriere: {u.corrieri.nome}</p>
                   )}
+                  {/* Permessi */}
+                  <div className="flex flex-wrap gap-1 mt-2">
+                    {(u.permessi || []).map(p => (
+                      <span key={p} className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">
+                        {PERMESSI_DISPONIBILI.find(pd => pd.id === p)?.label || p}
+                      </span>
+                    ))}
+                    {(!u.permessi || u.permessi.length === 0) && (
+                      <span className="text-xs text-gray-400 italic">Nessun permesso impostato</span>
+                    )}
+                  </div>
                 </div>
               </div>
-              <div className="flex gap-1">
+              <div className="flex gap-1 shrink-0">
                 <button onClick={() => openModal(u)} className="p-1.5 hover:bg-blue-50 rounded-lg text-blue-600">
                   <Edit2 size={16} />
                 </button>
@@ -146,10 +178,6 @@ export default function UtentiPage() {
           </div>
         ))}
       </div>
-
-      {utenti.length === 0 && (
-        <p className="text-center text-gray-400 py-8">Nessun utente configurato</p>
-      )}
 
       {/* Modale crea/modifica utente */}
       <Modal isOpen={showModal} onClose={() => setShowModal(false)} title={editing ? 'Modifica Utente' : 'Nuovo Utente'}>
@@ -200,9 +228,41 @@ export default function UtentiPage() {
                 <option value="">Nessun corriere collegato</option>
                 {corrieri.map(c => <option key={c.id} value={c.id}>{c.nome}</option>)}
               </select>
-              <p className="text-xs text-gray-400 mt-1">Se collegato, vedra' solo i giri assegnati a quel corriere</p>
             </div>
           )}
+
+          {/* Permessi */}
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <label className="block text-sm font-medium text-gray-700">Permessi (pagine visibili)</label>
+              <button onClick={handleSelectAll} className="text-xs text-blue-600 hover:underline">Seleziona tutti</button>
+            </div>
+            <div className="space-y-2">
+              {PERMESSI_DISPONIBILI.map(p => {
+                const isSelected = form.permessi.includes(p.id)
+                return (
+                  <button
+                    key={p.id}
+                    type="button"
+                    className={`w-full flex items-center gap-3 p-3 rounded-xl border-2 transition-colors text-left ${
+                      isSelected ? 'border-blue-500 bg-blue-50' : 'border-gray-200 bg-white hover:bg-gray-50'
+                    }`}
+                    onClick={() => togglePermesso(p.id)}
+                  >
+                    {isSelected ? (
+                      <CheckSquare size={20} className="text-blue-600 shrink-0" />
+                    ) : (
+                      <Square size={20} className="text-gray-300 shrink-0" />
+                    )}
+                    <div>
+                      <p className="font-medium text-gray-900 text-sm">{p.label}</p>
+                      <p className="text-xs text-gray-500">{p.desc}</p>
+                    </div>
+                  </button>
+                )
+              })}
+            </div>
+          </div>
 
           <Button className="w-full" onClick={handleSave}>
             {editing ? 'Salva Modifiche' : 'Crea Utente'}

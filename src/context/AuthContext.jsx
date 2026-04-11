@@ -47,6 +47,7 @@ export function AuthProvider({ children }) {
       ruolo: data.ruolo,
       corriere_id: data.corriere_id,
       corriere,
+      permessi: data.permessi || [],
       nome: data.ruolo === 'admin' ? 'Amministratore' : corriere?.nome || 'Utente',
     }
 
@@ -62,8 +63,14 @@ export function AuthProvider({ children }) {
 
   const isAdmin = utente?.ruolo === 'admin'
 
+  const haPermesso = (pagina) => {
+    if (!utente) return false
+    if (isAdmin && (!utente.permessi || utente.permessi.length === 0)) return true
+    return utente.permessi?.includes(pagina)
+  }
+
   return (
-    <AuthContext.Provider value={{ utente, loading, login, logout, isAdmin }}>
+    <AuthContext.Provider value={{ utente, loading, login, logout, isAdmin, haPermesso }}>
       {children}
     </AuthContext.Provider>
   )

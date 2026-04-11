@@ -49,7 +49,11 @@ export default function StoricoPage() {
       query = query.eq('localita_id', filtroLocalita)
     }
 
-    const { data } = await query
+    const { data, error } = await query
+
+    if (error) {
+      console.error('Errore storico:', error)
+    }
 
     let risultati = data || []
 

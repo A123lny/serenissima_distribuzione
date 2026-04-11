@@ -182,9 +182,24 @@ export function useGiri(corriereId = null) {
     await fetchGiri()
   }
 
+  const riordinaZoneGiro = async (giroId, zoneIds) => {
+    await Promise.all(zoneIds.map((zonaId, idx) =>
+      supabase.from('giri_zone').update({ ordine: idx }).eq('giro_id', giroId).eq('zona_id', zonaId)
+    ))
+    await fetchGiri()
+  }
+
+  const riordinaLocalitaGiro = async (localitaIds) => {
+    await Promise.all(localitaIds.map((id, idx) =>
+      supabase.from('localita').update({ ordine: idx }).eq('id', id)
+    ))
+    await fetchGiri()
+  }
+
   return {
     giri, loading, fetchGiri,
     addGiro, updateGiro, deleteGiro,
     assegnaCorriere, impostaZoneGiro,
+    riordinaZoneGiro, riordinaLocalitaGiro,
   }
 }

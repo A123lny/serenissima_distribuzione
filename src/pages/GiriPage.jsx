@@ -21,6 +21,7 @@ export default function GiriPage() {
     giri, loading: loadingGiri,
     addGiro, updateGiro, deleteGiro,
     assegnaCorriere, impostaZoneGiro,
+    riordinaZoneGiro, riordinaLocalitaGiro,
   } = useGiri()
 
   const [corrieri, setCorrieri] = useState([])
@@ -128,6 +129,24 @@ export default function GiriPage() {
     if (newIndex < 0 || newIndex >= locs.length) return
     ;[locs[index], locs[newIndex]] = [locs[newIndex], locs[index]]
     await riordinaLocalita(locs.map(l => l.id))
+  }
+
+  // Spostamento zone dentro un giro
+  const spostaZonaGiro = async (giro, index, direzione) => {
+    const zoneList = [...giro.zone]
+    const newIndex = index + direzione
+    if (newIndex < 0 || newIndex >= zoneList.length) return
+    ;[zoneList[index], zoneList[newIndex]] = [zoneList[newIndex], zoneList[index]]
+    await riordinaZoneGiro(giro.id, zoneList.map(z => z.id))
+  }
+
+  // Spostamento localita dentro una zona (nel tab Giri)
+  const spostaLocalitaGiro = async (localitaList, index, direzione) => {
+    const locs = [...localitaList]
+    const newIndex = index + direzione
+    if (newIndex < 0 || newIndex >= locs.length) return
+    ;[locs[index], locs[newIndex]] = [locs[newIndex], locs[index]]
+    await riordinaLocalitaGiro(locs.map(l => l.id))
   }
 
   // Giro
@@ -388,19 +407,39 @@ export default function GiriPage() {
                           Nessuna zona selezionata — clicca l'icona <Layers size={14} className="inline text-amber-600" /> per aggiungere zone
                         </p>
                       ) : (
-                        giro.zone.map(zona => (
+                        giro.zone.map((zona, zi) => (
                           <div key={zona.id} className="bg-gray-50 rounded-xl p-3">
-                            <div className="flex items-center gap-2 mb-2">
-                              <MapPinned size={16} className="text-amber-600" />
-                              <span className="font-medium text-gray-800">{zona.nome_zona}</span>
-                              <span className="text-xs text-gray-400">({zona.localita?.length || 0} localita)</span>
+                            <div className="flex items-center justify-between mb-2">
+                              <div className="flex items-center gap-2">
+                                <MapPinned size={16} className="text-amber-600" />
+                                <span className="font-medium text-gray-800">{zona.nome_zona}</span>
+                                <span className="text-xs text-gray-400">({zona.localita?.length || 0} localita)</span>
+                              </div>
+                              <div className="flex gap-1">
+                                <button onClick={() => spostaZonaGiro(giro, zi, -1)} disabled={zi === 0} className="p-1 hover:bg-gray-200 rounded disabled:opacity-30" title="Sposta su">
+                                  <ArrowUp size={14} />
+                                </button>
+                                <button onClick={() => spostaZonaGiro(giro, zi, 1)} disabled={zi === giro.zone.length - 1} className="p-1 hover:bg-gray-200 rounded disabled:opacity-30" title="Sposta giu">
+                                  <ArrowDown size={14} />
+                                </button>
+                              </div>
                             </div>
                             <div className="space-y-1.5 ml-6">
                               {(zona.localita || []).map((loc, idx) => (
-                                <div key={loc.id} className="flex items-center gap-2 text-sm">
-                                  <span className="text-gray-400 w-4 text-right">{idx + 1}.</span>
-                                  <span className="text-gray-700">{loc.nome_locale}</span>
-                                  <span className="text-xs text-blue-500">{loc.copie_standard} copie</span>
+                                <div key={loc.id} className="flex items-center justify-between text-sm">
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-gray-400 w-4 text-right">{idx + 1}.</span>
+                                    <span className="text-gray-700">{loc.nome_locale}</span>
+                                    <span className="text-xs text-blue-500">{loc.copie_standard} copie</span>
+                                  </div>
+                                  <div className="flex gap-0.5">
+                                    <button onClick={() => spostaLocalitaGiro(zona.localita, idx, -1)} disabled={idx === 0} className="p-0.5 hover:bg-gray-200 rounded disabled:opacity-30">
+                                      <ArrowUp size={12} />
+                                    </button>
+                                    <button onClick={() => spostaLocalitaGiro(zona.localita, idx, 1)} disabled={idx === zona.localita.length - 1} className="p-0.5 hover:bg-gray-200 rounded disabled:opacity-30">
+                                      <ArrowDown size={12} />
+                                    </button>
+                                  </div>
                                 </div>
                               ))}
                               {(zona.localita || []).length === 0 && (

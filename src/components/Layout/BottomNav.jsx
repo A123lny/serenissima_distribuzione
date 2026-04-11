@@ -19,10 +19,7 @@ export default function BottomNav() {
       isActive ? 'text-blue-600 font-semibold' : 'text-gray-500'
     }`
 
-  // Home e' sempre visibile, le altre in base ai permessi
-  const pagineVisibili = pagine.filter(p =>
-    p.permesso === 'dashboard' || haPermesso(p.permesso)
-  )
+  const pagineVisibili = pagine.filter(p => haPermesso(p.permesso))
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-40 pb-[env(safe-area-inset-bottom)]">

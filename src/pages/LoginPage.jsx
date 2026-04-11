@@ -1,9 +1,11 @@
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { Newspaper, Loader2, Eye, EyeOff } from 'lucide-react'
 import Button from '../components/UI/Button'
 
 export default function LoginPage() {
+  const navigate = useNavigate()
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
@@ -23,6 +25,7 @@ export default function LoginPage() {
 
     try {
       await login(username.trim(), password.trim())
+      navigate('/', { replace: true })
     } catch {
       setErrore('Utente o password non validi')
     } finally {

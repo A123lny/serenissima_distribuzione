@@ -28,7 +28,7 @@ export default function ConsegnaPage() {
 
   // Consegna - fermata corrente
   const [fermataIdx, setFermataIdx] = useState(0)
-  const [resiCorrente, setResiCorrente] = useState(0)
+  const [resiCorrente, setResiCorrente] = useState('')
 
   // Riepilogo
   const [kmPercorsi, setKmPercorsi] = useState('')
@@ -109,7 +109,7 @@ export default function ConsegnaPage() {
     if (result.data) {
       setFase('consegna')
       setFermataIdx(0)
-      setResiCorrente(0)
+      setResiCorrente('')
       avvia()
     }
   }
@@ -122,7 +122,7 @@ export default function ConsegnaPage() {
 
   const handleConfermaFermata = async () => {
     if (!fermataCorrente) return
-    await completaFermata(fermataCorrente.id, resiCorrente)
+    await completaFermata(fermataCorrente.id, parseInt(resiCorrente) || 0)
 
     // Vai alla prossima fermata non completata
     if (fermataIdx < consegne.length - 1) {
@@ -134,14 +134,14 @@ export default function ConsegnaPage() {
   const handleAvanti = () => {
     if (fermataIdx < consegne.length - 1) {
       setFermataIdx(fermataIdx + 1)
-      setResiCorrente(consegne[fermataIdx + 1]?.resi_ritirati || 0)
+      setResiCorrente(consegne[fermataIdx + 1]?.resi_ritirati || '')
     }
   }
 
   const handleIndietro = () => {
     if (fermataIdx > 0) {
       setFermataIdx(fermataIdx - 1)
-      setResiCorrente(consegne[fermataIdx - 1]?.resi_ritirati || 0)
+      setResiCorrente(consegne[fermataIdx - 1]?.resi_ritirati || '')
     }
   }
 
@@ -330,7 +330,7 @@ export default function ConsegnaPage() {
                       min={0}
                       className="w-full border-2 border-gray-200 rounded-xl px-4 py-4 text-2xl text-center font-bold focus:border-blue-500 focus:outline-none"
                       value={resiCorrente}
-                      onChange={e => setResiCorrente(parseInt(e.target.value) || 0)}
+                      onChange={e => setResiCorrente(e.target.value === '' ? '' : parseInt(e.target.value) || 0)}
                     />
                   </div>
 

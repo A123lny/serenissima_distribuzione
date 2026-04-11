@@ -1,40 +1,34 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
-import { useAuth } from '../context/AuthContext'
 import { Download, TrendingDown, TrendingUp } from 'lucide-react'
 import Button from '../components/UI/Button'
 import Badge from '../components/UI/Badge'
 
 export default function StoricoPage() {
-  const { isAdmin } = useAuth()
   const [storico, setStorico] = useState([])
   const [localitaList, setLocalitaList] = useState([])
-  const [giriList, setGiriList] = useState([])
+  const [zoneList, setZoneList] = useState([])
   const [loading, setLoading] = useState(true)
 
   // Filtri
-  const [filtroGiro, setFiltroGiro] = useState('')
+  const [filtroZona, setFiltroZona] = useState('')
   const [filtroLocalita, setFiltroLocalita] = useState('')
-  const [filtroPeriodo, setFiltroPeriodo] = useState('7') // giorni
+  const [filtroPeriodo, setFiltroPeriodo] = useState('7')
 
-  useEffect(() => {
-    loadFiltri()
-  }, [])
-
-  useEffect(() => {
-    fetchStorico()
-  }, [filtroGiro, filtroLocalita, filtroPeriodo])
+  useEffect(() => { loadFiltri() }, [])
+  useEffect(() => { fetchStorico() }, [filtroZona, filtroLocalita, filtroPeriodo])
 
   const loadFiltri = async () => {
-    const { data: giri } = await supabase
-      .from('giri')
-      .select('*, corrieri(nome)')
+    const { data: zone } = await supabase
+      .from('zone')
+      .select('*')
       .eq('attivo', true)
-    if (giri) setGiriList(giri)
+      .order('nome_zona')
+    if (zone) setZoneList(zone)
 
     const { data: locs } = await supabase
       .from('localita')
-      .select('*, giri(nome_giro)')
+      .select('*, zone(nome_zona)')
       .eq('attivo', true)
       .order('nome_locale')
     if (locs) setLocalitaList(locs)
@@ -47,7 +41,7 @@ export default function StoricoPage() {
 
     let query = supabase
       .from('storico_rimanenze')
-      .select('*, localita(nome_locale, giro_id, giri(nome_giro, corrieri(nome)))')
+      .select('*, localita(nome_locale, zona_id, zone(nome_zona))')
       .gte('data', dataInizio.toISOString().split('T')[0])
       .order('data', { ascending: false })
 
@@ -59,9 +53,9 @@ export default function StoricoPage() {
 
     let risultati = data || []
 
-    // Filtra per giro (client-side perche' e' una relazione nested)
-    if (filtroGiro) {
-      risultati = risultati.filter(r => r.localita?.giro_id === filtroGiro)
+    // Filtra per zona (client-side)
+    if (filtroZona) {
+      risultati = risultati.filter(r => r.localita?.zona_id === filtroZona)
     }
 
     setStorico(risultati)
@@ -69,9 +63,9 @@ export default function StoricoPage() {
   }
 
   const exportCSV = () => {
-    const headers = 'Data,Localita,Giro,Copie Consegnate,Rimanenze\n'
+    const headers = 'Data,Localita,Zona,Copie Consegnate,Rimanenze\n'
     const rows = storico.map(r =>
-      `${r.data},"${r.localita?.nome_locale}","${r.localita?.giri?.nome_giro || ''}",${r.copie_consegnate || 0},${r.rimanenze || 0}`
+      `${r.data},"${r.localita?.nome_locale}","${r.localita?.zone?.nome_zona || ''}",${r.copie_consegnate || 0},${r.rimanenze || 0}`
     ).join('\n')
 
     const blob = new Blob([headers + rows], { type: 'text/csv' })
@@ -98,14 +92,12 @@ export default function StoricoPage() {
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         <select
           className="border-2 border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:border-blue-500 focus:outline-none"
-          value={filtroGiro}
-          onChange={e => setFiltroGiro(e.target.value)}
+          value={filtroZona}
+          onChange={e => setFiltroZona(e.target.value)}
         >
-          <option value="">Tutti i giri</option>
-          {giriList.map(g => (
-            <option key={g.id} value={g.id}>
-              {g.nome_giro || `Giro ${g.numero_giro}`} ({g.corrieri?.nome})
-            </option>
+          <option value="">Tutte le zone</option>
+          {zoneList.map(z => (
+            <option key={z.id} value={z.id}>{z.nome_zona}</option>
           ))}
         </select>
 
@@ -116,7 +108,7 @@ export default function StoricoPage() {
         >
           <option value="">Tutte le localita</option>
           {localitaList
-            .filter(l => !filtroGiro || l.giro_id === filtroGiro)
+            .filter(l => !filtroZona || l.zona_id === filtroZona)
             .map(l => (
               <option key={l.id} value={l.id}>{l.nome_locale}</option>
             ))
@@ -162,7 +154,8 @@ export default function StoricoPage() {
                 <div>
                   <p className="font-medium text-gray-900">{r.localita?.nome_locale}</p>
                   <p className="text-xs text-gray-500">
-                    {new Date(r.data).toLocaleDateString('it-IT')} - {r.localita?.giri?.nome_giro}
+                    {new Date(r.data).toLocaleDateString('it-IT')}
+                    {r.localita?.zone?.nome_zona && ` - ${r.localita.zone.nome_zona}`}
                   </p>
                 </div>
                 <div className="text-right flex items-center gap-2">

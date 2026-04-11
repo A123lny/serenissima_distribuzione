@@ -10,6 +10,14 @@ import StoricoPage from './pages/StoricoPage'
 import ReportPage from './pages/ReportPage'
 import UtentiPage from './pages/UtentiPage'
 
+const PAGINE_ORDINE = [
+  { path: '/giri', permesso: 'giri' },
+  { path: '/consegna', permesso: 'consegne' },
+  { path: '/storico', permesso: 'storico' },
+  { path: '/report', permesso: 'report' },
+  { path: '/utenti', permesso: 'utenti' },
+]
+
 function ProtectedRoute({ children, permesso }) {
   const { utente, loading, haPermesso } = useAuth()
 
@@ -22,9 +30,26 @@ function ProtectedRoute({ children, permesso }) {
   }
 
   if (!utente) return <Navigate to="/login" replace />
-  if (permesso && !haPermesso(permesso)) return <Navigate to="/" replace />
+  if (permesso && !haPermesso(permesso)) {
+    // Redirect alla prima pagina disponibile
+    const prima = PAGINE_ORDINE.find(p => haPermesso(p.permesso))
+    return <Navigate to={prima?.path || '/login'} replace />
+  }
 
   return children
+}
+
+function HomePage() {
+  const { haPermesso } = useAuth()
+
+  // Se ha permesso dashboard, mostra la dashboard
+  if (haPermesso('dashboard')) return <Dashboard />
+
+  // Altrimenti redirect alla prima pagina disponibile
+  const prima = PAGINE_ORDINE.find(p => haPermesso(p.permesso))
+  if (prima) return <Navigate to={prima.path} replace />
+
+  return <Navigate to="/login" replace />
 }
 
 function AppLayout() {
@@ -33,7 +58,7 @@ function AppLayout() {
       <Navbar />
       <main className="max-w-2xl mx-auto">
         <Routes>
-          <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+          <Route path="/" element={<ProtectedRoute><HomePage /></ProtectedRoute>} />
           <Route path="/giri" element={<ProtectedRoute permesso="giri"><GiriPage /></ProtectedRoute>} />
           <Route path="/consegna" element={<ProtectedRoute permesso="consegne"><ConsegnaPage /></ProtectedRoute>} />
           <Route path="/storico" element={<ProtectedRoute permesso="storico"><StoricoPage /></ProtectedRoute>} />

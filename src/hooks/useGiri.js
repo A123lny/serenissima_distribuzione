@@ -107,8 +107,8 @@ export function useGiri(corriereId = null) {
         .eq('giro_id', giro.id)
         .order('ordine')
 
-      const zoneIds = (gzData || []).map(gz => gz.zona_id)
-      const zoneCollegate = (gzData || []).map(gz => gz.zone).filter(Boolean)
+      const zoneCollegate = (gzData || []).map(gz => gz.zone).filter(z => z && z.attivo !== false)
+      const zoneIds = zoneCollegate.map(z => z.id)
 
       // Carica localita per tutte le zone del giro
       let tutteLocalita = []

@@ -36,12 +36,14 @@ export default function ConsegnaPage() {
 
   // Modali
   const [showConfirmFine, setShowConfirmFine] = useState(false)
+  const [pageLoading, setPageLoading] = useState(true)
 
   useEffect(() => {
     loadInitialData()
   }, [])
 
   const loadInitialData = async () => {
+    setPageLoading(true)
     if (isAdmin) {
       const { data } = await supabase.from('corrieri').select('*').eq('attivo', true)
       if (data) setCorrieri(data)
@@ -49,6 +51,7 @@ export default function ConsegnaPage() {
       setSelCorriere(utente.corriere_id)
       await caricaSessioneAttiva(utente.corriere_id)
     }
+    setPageLoading(false)
   }
 
   useEffect(() => {
@@ -166,6 +169,14 @@ export default function ConsegnaPage() {
 
   const apriMaps = (indirizzo) => {
     window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(indirizzo)}`, '_blank')
+  }
+
+  if (pageLoading) {
+    return (
+      <div className="flex items-center justify-center p-12">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+      </div>
+    )
   }
 
   // === FASE PREPARAZIONE ===

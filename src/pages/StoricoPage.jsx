@@ -95,7 +95,7 @@ export default function StoricoPage() {
       {/* Filtri */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         <select
-          className="border-2 border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:border-blue-500 focus:outline-none"
+          className="border-2 border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:border-navy-500 focus:outline-none"
           value={filtroZona}
           onChange={e => setFiltroZona(e.target.value)}
         >
@@ -106,7 +106,7 @@ export default function StoricoPage() {
         </select>
 
         <select
-          className="border-2 border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:border-blue-500 focus:outline-none"
+          className="border-2 border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:border-navy-500 focus:outline-none"
           value={filtroLocalita}
           onChange={e => setFiltroLocalita(e.target.value)}
         >
@@ -120,7 +120,7 @@ export default function StoricoPage() {
         </select>
 
         <select
-          className="border-2 border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:border-blue-500 focus:outline-none"
+          className="border-2 border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:border-navy-500 focus:outline-none"
           value={filtroPeriodo}
           onChange={e => setFiltroPeriodo(e.target.value)}
         >
@@ -134,7 +134,7 @@ export default function StoricoPage() {
       {/* Tabella */}
       {loading ? (
         <div className="flex items-center justify-center p-8">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-navy-600"></div>
         </div>
       ) : storico.length === 0 ? (
         <div className="text-center py-12 text-gray-400">

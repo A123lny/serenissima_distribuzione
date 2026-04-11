@@ -206,7 +206,7 @@ export default function GiriPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center p-8">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-navy-600"></div>
       </div>
     )
   }
@@ -225,7 +225,7 @@ export default function GiriPage() {
       <div className="flex bg-gray-100 rounded-xl p-1">
         <button
           className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-medium transition-colors ${
-            tab === 'zone' ? 'bg-white text-blue-700 shadow-sm' : 'text-gray-500'
+            tab === 'zone' ? 'bg-white text-terra-600 shadow-sm' : 'text-gray-500'
           }`}
           onClick={() => setTab('zone')}
         >
@@ -234,7 +234,7 @@ export default function GiriPage() {
         </button>
         <button
           className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-medium transition-colors ${
-            tab === 'giri' ? 'bg-white text-blue-700 shadow-sm' : 'text-gray-500'
+            tab === 'giri' ? 'bg-white text-terra-600 shadow-sm' : 'text-gray-500'
           }`}
           onClick={() => setTab('giri')}
         >
@@ -281,7 +281,7 @@ export default function GiriPage() {
                       </div>
                     </div>
                     <div className="flex gap-1 shrink-0" onClick={e => e.stopPropagation()}>
-                      <button onClick={() => openZonaModal(zona)} className="p-1.5 hover:bg-blue-50 rounded-lg text-blue-600">
+                      <button onClick={() => openZonaModal(zona)} className="p-1.5 hover:bg-navy-50 rounded-lg text-terra-500">
                         <Edit2 size={16} />
                       </button>
                       <button onClick={() => deleteZona(zona.id)} className="p-1.5 hover:bg-red-50 rounded-lg text-red-500">
@@ -296,7 +296,7 @@ export default function GiriPage() {
                       {zona.localita.map((loc, idx) => (
                         <div key={loc.id} className="bg-gray-50 rounded-lg p-3 flex items-start justify-between">
                           <div className="flex items-start gap-2 flex-1 min-w-0">
-                            <span className="bg-blue-100 text-blue-700 rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold mt-0.5 shrink-0">
+                            <span className="bg-navy-100 text-terra-600 rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold mt-0.5 shrink-0">
                               {idx + 1}
                             </span>
                             <div className="min-w-0">
@@ -307,7 +307,7 @@ export default function GiriPage() {
                                 </p>
                               )}
                               {loc.note && <p className="text-xs text-gray-400 italic">{loc.note}</p>}
-                              <p className="text-xs text-blue-600 mt-1">
+                              <p className="text-xs text-terra-500 mt-1">
                                 <Package size={12} className="inline mr-1" />{loc.copie_standard} copie
                               </p>
                             </div>
@@ -319,7 +319,7 @@ export default function GiriPage() {
                             <button onClick={() => spostaLocalita(zona.localita, idx, 1)} disabled={idx === zona.localita.length - 1} className="p-1 hover:bg-gray-200 rounded disabled:opacity-30">
                               <ArrowDown size={14} />
                             </button>
-                            <button onClick={() => openLocalitaModal(zona.id, loc)} className="p-1 hover:bg-blue-50 rounded text-blue-600">
+                            <button onClick={() => openLocalitaModal(zona.id, loc)} className="p-1 hover:bg-navy-50 rounded text-terra-500">
                               <Edit2 size={14} />
                             </button>
                             <button onClick={() => deleteLocalita(loc.id)} className="p-1 hover:bg-red-50 rounded text-red-500">
@@ -390,7 +390,7 @@ export default function GiriPage() {
                       <button onClick={() => openAssegnaModal(giro)} className="p-1.5 hover:bg-green-50 rounded-lg text-green-600" title="Assegna corriere">
                         <UserPlus size={16} />
                       </button>
-                      <button onClick={() => openGiroModal(giro)} className="p-1.5 hover:bg-blue-50 rounded-lg text-blue-600" title="Modifica nome">
+                      <button onClick={() => openGiroModal(giro)} className="p-1.5 hover:bg-navy-50 rounded-lg text-terra-500" title="Modifica nome">
                         <Edit2 size={16} />
                       </button>
                       <button onClick={() => deleteGiro(giro.id)} className="p-1.5 hover:bg-red-50 rounded-lg text-red-500" title="Elimina giro">
@@ -430,7 +430,7 @@ export default function GiriPage() {
                                   <div className="flex items-center gap-2">
                                     <span className="text-gray-400 w-4 text-right">{idx + 1}.</span>
                                     <span className="text-gray-700">{loc.nome_locale}</span>
-                                    <span className="text-xs text-blue-500">{loc.copie_standard} copie</span>
+                                    <span className="text-xs text-terra-500">{loc.copie_standard} copie</span>
                                   </div>
                                   <div className="flex gap-0.5">
                                     <button onClick={() => spostaLocalitaGiro(zona.localita, idx, -1)} disabled={idx === 0} className="p-0.5 hover:bg-gray-200 rounded disabled:opacity-30">
@@ -466,7 +466,7 @@ export default function GiriPage() {
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Nome</label>
             <input
-              className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 focus:border-blue-500 focus:outline-none"
+              className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 focus:border-navy-500 focus:outline-none"
               value={corriereForm.nome}
               onChange={e => setCorriereForm({ ...corriereForm, nome: e.target.value })}
               placeholder="Nome del corriere"
@@ -475,7 +475,7 @@ export default function GiriPage() {
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Veicolo</label>
             <input
-              className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 focus:border-blue-500 focus:outline-none"
+              className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 focus:border-navy-500 focus:outline-none"
               value={corriereForm.veicolo}
               onChange={e => setCorriereForm({ ...corriereForm, veicolo: e.target.value })}
               placeholder="Es. Fiat Punto, Scooter"
@@ -491,7 +491,7 @@ export default function GiriPage() {
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Nome Zona</label>
             <input
-              className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 focus:border-blue-500 focus:outline-none"
+              className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 focus:border-navy-500 focus:outline-none"
               value={zonaForm.nome_zona}
               onChange={e => setZonaForm({ ...zonaForm, nome_zona: e.target.value })}
               placeholder="Es. Borgo Maggiore, Serravalle"
@@ -510,7 +510,7 @@ export default function GiriPage() {
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Nome Locale</label>
             <input
-              className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 focus:border-blue-500 focus:outline-none"
+              className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 focus:border-navy-500 focus:outline-none"
               value={locForm.nome_locale}
               onChange={e => setLocForm({ ...locForm, nome_locale: e.target.value })}
               placeholder="Es. Bar Sport, Tabacchi Rossi"
@@ -519,7 +519,7 @@ export default function GiriPage() {
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Indirizzo</label>
             <input
-              className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 focus:border-blue-500 focus:outline-none"
+              className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 focus:border-navy-500 focus:outline-none"
               value={locForm.indirizzo}
               onChange={e => setLocForm({ ...locForm, indirizzo: e.target.value })}
               placeholder="Via Roma 15, Borgo Maggiore"
@@ -528,7 +528,7 @@ export default function GiriPage() {
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Note</label>
             <textarea
-              className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 focus:border-blue-500 focus:outline-none"
+              className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 focus:border-navy-500 focus:outline-none"
               value={locForm.note}
               onChange={e => setLocForm({ ...locForm, note: e.target.value })}
               placeholder="Es. Lasciare fuori dalla porta"
@@ -540,7 +540,7 @@ export default function GiriPage() {
             <input
               type="number"
               min={0}
-              className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 focus:border-blue-500 focus:outline-none"
+              className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 focus:border-navy-500 focus:outline-none"
               value={locForm.copie_standard}
               onChange={e => setLocForm({ ...locForm, copie_standard: parseInt(e.target.value) || 0 })}
             />
@@ -557,7 +557,7 @@ export default function GiriPage() {
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Nome Giro</label>
             <input
-              className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 focus:border-blue-500 focus:outline-none"
+              className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 focus:border-navy-500 focus:outline-none"
               value={giroForm.nome_giro}
               onChange={e => setGiroForm({ ...giroForm, nome_giro: e.target.value })}
               placeholder="Es. Giro Nord, Giro Centro"
@@ -576,7 +576,7 @@ export default function GiriPage() {
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Corriere</label>
             <select
-              className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 focus:border-blue-500 focus:outline-none"
+              className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 focus:border-navy-500 focus:outline-none"
               value={assegnaCorriereId}
               onChange={e => setAssegnaCorriereId(e.target.value)}
             >
@@ -599,13 +599,13 @@ export default function GiriPage() {
                 key={zona.id}
                 className={`w-full flex items-center gap-3 p-3 rounded-xl border-2 transition-colors text-left ${
                   isSelected
-                    ? 'border-blue-500 bg-blue-50'
+                    ? 'border-navy-500 bg-navy-50'
                     : 'border-gray-200 bg-white hover:bg-gray-50'
                 }`}
                 onClick={() => toggleZonaGiro(zona.id)}
               >
                 {isSelected ? (
-                  <CheckSquare size={22} className="text-blue-600 shrink-0" />
+                  <CheckSquare size={22} className="text-terra-500 shrink-0" />
                 ) : (
                   <Square size={22} className="text-gray-300 shrink-0" />
                 )}

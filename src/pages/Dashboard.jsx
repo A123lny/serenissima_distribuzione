@@ -76,7 +76,7 @@ export default function Dashboard() {
   if (loading) {
     return (
       <div className="flex items-center justify-center p-8">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-navy-600"></div>
       </div>
     )
   }
@@ -94,12 +94,12 @@ export default function Dashboard() {
 
       {/* Stats rapide */}
       <div className="grid grid-cols-2 gap-3">
-        <div className="bg-blue-50 rounded-xl p-4">
-          <div className="flex items-center gap-2 text-blue-600 mb-1">
+        <div className="bg-navy-50 rounded-xl p-4">
+          <div className="flex items-center gap-2 text-terra-500 mb-1">
             <Truck size={20} />
             <span className="text-sm font-medium">Giri oggi</span>
           </div>
-          <p className="text-2xl font-bold text-blue-900">{stats.giriOggi.length}</p>
+          <p className="text-2xl font-bold text-navy-800">{stats.giriOggi.length}</p>
         </div>
         <div className="bg-green-50 rounded-xl p-4">
           <div className="flex items-center gap-2 text-green-600 mb-1">

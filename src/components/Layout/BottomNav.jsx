@@ -16,7 +16,7 @@ export default function BottomNav() {
 
   const linkClass = ({ isActive }) =>
     `flex flex-col items-center gap-1 py-2 px-2 text-xs transition-colors ${
-      isActive ? 'text-blue-600 font-semibold' : 'text-gray-500'
+      isActive ? 'text-terra-500 font-semibold' : 'text-gray-500'
     }`
 
   const pagineVisibili = pagine.filter(p => haPermesso(p.permesso))

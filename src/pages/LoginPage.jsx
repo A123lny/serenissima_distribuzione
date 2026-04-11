@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
-import { Newspaper, Loader2, Eye, EyeOff } from 'lucide-react'
+import { Loader2, Eye, EyeOff } from 'lucide-react'
 import Button from '../components/UI/Button'
 
 export default function LoginPage() {
@@ -34,14 +34,15 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-600 to-blue-800 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-br from-navy-600 to-navy-800 flex items-center justify-center p-4">
       <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm p-8">
         <div className="flex flex-col items-center mb-8">
-          <div className="bg-blue-100 p-4 rounded-full mb-4">
-            <Newspaper size={40} className="text-blue-600" />
-          </div>
-          <h1 className="text-2xl font-bold text-gray-900">GestDistribuzione</h1>
-          <p className="text-gray-500 mt-1">Gestione distribuzione giornali</p>
+          <img
+            src={import.meta.env.BASE_URL + 'logo.jpeg'}
+            alt="Serenissima Sera"
+            className="h-20 mb-4 rounded"
+          />
+          <p className="text-gray-500 mt-1">Gestione distribuzione</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -54,7 +55,7 @@ export default function LoginPage() {
               value={username}
               onChange={(e) => { setUsername(e.target.value); setErrore('') }}
               placeholder="Inserisci il tuo utente"
-              className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl text-base focus:border-blue-500 focus:outline-none transition-colors"
+              className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl text-base focus:border-navy-500 focus:outline-none transition-colors"
               autoFocus
               autoComplete="username"
             />
@@ -70,7 +71,7 @@ export default function LoginPage() {
                 value={password}
                 onChange={(e) => { setPassword(e.target.value); setErrore('') }}
                 placeholder="Inserisci la password"
-                className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl text-base focus:border-blue-500 focus:outline-none transition-colors pr-12"
+                className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl text-base focus:border-navy-500 focus:outline-none transition-colors pr-12"
                 autoComplete="current-password"
               />
               <button

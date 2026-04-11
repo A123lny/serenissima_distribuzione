@@ -174,7 +174,7 @@ export default function ConsegnaPage() {
   if (pageLoading) {
     return (
       <div className="flex items-center justify-center p-12">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-navy-600"></div>
       </div>
     )
   }
@@ -188,7 +188,7 @@ export default function ConsegnaPage() {
         {isAdmin && (
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Corriere</label>
-            <select className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 text-base focus:border-blue-500 focus:outline-none"
+            <select className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 text-base focus:border-navy-500 focus:outline-none"
               value={selCorriere} onChange={e => { setSelCorriere(e.target.value); setSelGiro(''); setPrepData([]) }}>
               <option value="">Seleziona corriere</option>
               {corrieri.map(c => <option key={c.id} value={c.id}>{c.nome}</option>)}
@@ -199,7 +199,7 @@ export default function ConsegnaPage() {
         {selCorriere && (
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Giro</label>
-            <select className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 text-base focus:border-blue-500 focus:outline-none"
+            <select className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 text-base focus:border-navy-500 focus:outline-none"
               value={selGiro} onChange={e => setSelGiro(e.target.value)}>
               <option value="">Seleziona giro</option>
               {giriDisponibili.map(g => <option key={g.id} value={g.id}>{g.nome_giro || 'Giro senza nome'}</option>)}
@@ -213,23 +213,23 @@ export default function ConsegnaPage() {
         {selGiro && (
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Veicolo</label>
-            <input className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 text-base focus:border-blue-500 focus:outline-none"
+            <input className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 text-base focus:border-navy-500 focus:outline-none"
               value={veicolo} onChange={e => setVeicolo(e.target.value)} placeholder="Es. Fiat Punto" />
           </div>
         )}
 
         {/* Riepilogo fermate */}
         {prepData.length > 0 && (
-          <div className="bg-blue-50 rounded-xl p-4">
-            <p className="font-semibold text-blue-900">{prepData.length} fermate in {zoneGiro.length} zone</p>
-            <p className="text-sm text-blue-700 mt-1">
+          <div className="bg-navy-50 rounded-xl p-4">
+            <p className="font-semibold text-navy-800">{prepData.length} fermate in {zoneGiro.length} zone</p>
+            <p className="text-sm text-terra-600 mt-1">
               Totale copie: {prepData.reduce((s, p) => s + p.copie_consegnate, 0)}
             </p>
             <div className="mt-3 space-y-1">
               {zoneGiro.map(z => {
                 const locsZona = prepData.filter(p => p.zona_id === z.id)
                 return (
-                  <div key={z.id} className="flex items-center gap-2 text-sm text-blue-800">
+                  <div key={z.id} className="flex items-center gap-2 text-sm text-navy-700">
                     <MapPinned size={14} className="text-amber-600" />
                     <span>{z.nome_zona}: {locsZona.length} fermate</span>
                   </div>
@@ -257,7 +257,7 @@ export default function ConsegnaPage() {
     return (
       <div className="min-h-screen bg-gray-50 pb-4">
         {/* Timer + progresso sticky */}
-        <div className="sticky top-[52px] z-30 bg-blue-700 text-white px-4 py-2">
+        <div className="sticky top-[52px] z-30 bg-navy-600 text-white px-4 py-2">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Clock size={18} />
@@ -301,7 +301,7 @@ export default function ConsegnaPage() {
               {fermataCorrente.localita?.indirizzo && (
                 <button
                   onClick={() => apriMaps(fermataCorrente.localita.indirizzo)}
-                  className="flex items-center gap-2 text-blue-600 text-sm mb-3 active:opacity-70"
+                  className="flex items-center gap-2 text-terra-500 text-sm mb-3 active:opacity-70"
                 >
                   <Navigation size={16} />
                   <span className="underline">{fermataCorrente.localita.indirizzo}</span>
@@ -314,12 +314,12 @@ export default function ConsegnaPage() {
               )}
 
               {/* Copie da lasciare */}
-              <div className="bg-blue-50 rounded-xl p-4 mb-4">
+              <div className="bg-navy-50 rounded-xl p-4 mb-4">
                 <div className="flex items-center gap-2 mb-1">
-                  <Package size={18} className="text-blue-600" />
-                  <span className="text-sm font-medium text-blue-700">Copie da lasciare</span>
+                  <Package size={18} className="text-terra-500" />
+                  <span className="text-sm font-medium text-terra-600">Copie da lasciare</span>
                 </div>
-                <p className="text-4xl font-bold text-blue-900">{fermataCorrente.copie_consegnate}</p>
+                <p className="text-4xl font-bold text-navy-800">{fermataCorrente.copie_consegnate}</p>
               </div>
 
               {/* Stato completato */}
@@ -339,7 +339,7 @@ export default function ConsegnaPage() {
                     <input
                       type="number"
                       min={0}
-                      className="w-full border-2 border-gray-200 rounded-xl px-4 py-4 text-2xl text-center font-bold focus:border-blue-500 focus:outline-none"
+                      className="w-full border-2 border-gray-200 rounded-xl px-4 py-4 text-2xl text-center font-bold focus:border-navy-500 focus:outline-none"
                       value={resiCorrente}
                       onChange={e => setResiCorrente(e.target.value === '' ? '' : parseInt(e.target.value) || 0)}
                     />
@@ -435,9 +435,9 @@ export default function ConsegnaPage() {
       <h2 className="text-2xl font-bold text-gray-900">Riepilogo Consegna</h2>
 
       <div className="grid grid-cols-2 gap-3">
-        <div className="bg-blue-50 rounded-xl p-4">
-          <p className="text-xs text-blue-600 font-medium">Durata</p>
-          <p className="text-xl font-bold text-blue-900">{formato}</p>
+        <div className="bg-navy-50 rounded-xl p-4">
+          <p className="text-xs text-terra-500 font-medium">Durata</p>
+          <p className="text-xl font-bold text-navy-800">{formato}</p>
         </div>
         <div className="bg-green-50 rounded-xl p-4">
           <p className="text-xs text-green-600 font-medium">Completate</p>
@@ -456,13 +456,13 @@ export default function ConsegnaPage() {
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-1">Km percorsi</label>
         <input type="number" step="0.1" min={0}
-          className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 text-base focus:border-blue-500 focus:outline-none"
+          className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 text-base focus:border-navy-500 focus:outline-none"
           value={kmPercorsi} onChange={e => setKmPercorsi(e.target.value)} placeholder="Es. 25.5" />
       </div>
 
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-1">Note sessione</label>
-        <textarea className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 focus:border-blue-500 focus:outline-none"
+        <textarea className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 focus:border-navy-500 focus:outline-none"
           value={noteSessione} onChange={e => setNoteSessione(e.target.value)} rows={2} placeholder="Note opzionali..." />
       </div>
 

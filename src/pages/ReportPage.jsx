@@ -69,7 +69,7 @@ export default function ReportPage() {
       {/* Filtri */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         <select
-          className="border-2 border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:border-blue-500 focus:outline-none"
+          className="border-2 border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:border-navy-500 focus:outline-none"
           value={filtroCorriere}
           onChange={e => setFiltroCorriere(e.target.value)}
         >
@@ -78,7 +78,7 @@ export default function ReportPage() {
         </select>
 
         <select
-          className="border-2 border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:border-blue-500 focus:outline-none"
+          className="border-2 border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:border-navy-500 focus:outline-none"
           value={filtroPeriodo}
           onChange={e => setFiltroPeriodo(e.target.value)}
         >
@@ -94,7 +94,7 @@ export default function ReportPage() {
             type="number"
             step="0.01"
             min={0}
-            className="w-full border-2 border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:border-blue-500 focus:outline-none"
+            className="w-full border-2 border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:border-navy-500 focus:outline-none"
             value={costoKm}
             onChange={e => setCostoKm(parseFloat(e.target.value) || 0)}
           />
@@ -103,12 +103,12 @@ export default function ReportPage() {
 
       {/* Stats cards */}
       <div className="grid grid-cols-2 gap-3">
-        <div className="bg-blue-50 rounded-xl p-4">
-          <div className="flex items-center gap-2 text-blue-600 mb-1">
+        <div className="bg-navy-50 rounded-xl p-4">
+          <div className="flex items-center gap-2 text-terra-500 mb-1">
             <Clock size={18} />
             <span className="text-xs font-medium">Ore totali</span>
           </div>
-          <p className="text-xl font-bold text-blue-900">
+          <p className="text-xl font-bold text-navy-800">
             {Math.floor(totali.ore / 60)}h {totali.ore % 60}m
           </p>
         </div>
@@ -158,7 +158,7 @@ export default function ReportPage() {
       {/* Dettaglio sessioni */}
       {loading ? (
         <div className="flex items-center justify-center p-8">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-navy-600"></div>
         </div>
       ) : (
         <div>

@@ -113,7 +113,7 @@ export default function UtentiPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center p-8">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-navy-600"></div>
       </div>
     )
   }
@@ -133,8 +133,8 @@ export default function UtentiPage() {
           <div key={u.id} className="bg-white border border-gray-200 rounded-xl p-4">
             <div className="flex items-start justify-between">
               <div className="flex items-start gap-3">
-                <div className={`p-2 rounded-full ${u.ruolo === 'admin' ? 'bg-purple-100' : 'bg-blue-100'}`}>
-                  {u.ruolo === 'admin' ? <Shield size={20} className="text-purple-600" /> : <User size={20} className="text-blue-600" />}
+                <div className={`p-2 rounded-full ${u.ruolo === 'admin' ? 'bg-purple-100' : 'bg-navy-100'}`}>
+                  {u.ruolo === 'admin' ? <Shield size={20} className="text-purple-600" /> : <User size={20} className="text-terra-500" />}
                 </div>
                 <div>
                   <div className="flex items-center gap-2">
@@ -167,7 +167,7 @@ export default function UtentiPage() {
                 </div>
               </div>
               <div className="flex gap-1 shrink-0">
-                <button onClick={() => openModal(u)} className="p-1.5 hover:bg-blue-50 rounded-lg text-blue-600">
+                <button onClick={() => openModal(u)} className="p-1.5 hover:bg-navy-50 rounded-lg text-terra-500">
                   <Edit2 size={16} />
                 </button>
                 <button onClick={() => handleDelete(u.id)} className="p-1.5 hover:bg-red-50 rounded-lg text-red-500">
@@ -185,7 +185,7 @@ export default function UtentiPage() {
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Username</label>
             <input
-              className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 focus:border-blue-500 focus:outline-none"
+              className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 focus:border-navy-500 focus:outline-none"
               value={form.username}
               onChange={e => setForm({ ...form, username: e.target.value })}
               placeholder="Es. mario, admin2"
@@ -197,7 +197,7 @@ export default function UtentiPage() {
             <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
             <input
               type="text"
-              className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 focus:border-blue-500 focus:outline-none"
+              className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 focus:border-navy-500 focus:outline-none"
               value={form.password}
               onChange={e => setForm({ ...form, password: e.target.value })}
               placeholder="Scegli una password"
@@ -208,7 +208,7 @@ export default function UtentiPage() {
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Ruolo</label>
             <select
-              className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 focus:border-blue-500 focus:outline-none"
+              className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 focus:border-navy-500 focus:outline-none"
               value={form.ruolo}
               onChange={e => setForm({ ...form, ruolo: e.target.value })}
             >
@@ -221,7 +221,7 @@ export default function UtentiPage() {
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Collega a corriere (opzionale)</label>
               <select
-                className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 focus:border-blue-500 focus:outline-none"
+                className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 focus:border-navy-500 focus:outline-none"
                 value={form.corriere_id}
                 onChange={e => setForm({ ...form, corriere_id: e.target.value })}
               >
@@ -235,7 +235,7 @@ export default function UtentiPage() {
           <div>
             <div className="flex items-center justify-between mb-2">
               <label className="block text-sm font-medium text-gray-700">Permessi (pagine visibili)</label>
-              <button onClick={handleSelectAll} className="text-xs text-blue-600 hover:underline">Seleziona tutti</button>
+              <button onClick={handleSelectAll} className="text-xs text-terra-500 hover:underline">Seleziona tutti</button>
             </div>
             <div className="space-y-2">
               {PERMESSI_DISPONIBILI.map(p => {
@@ -245,12 +245,12 @@ export default function UtentiPage() {
                     key={p.id}
                     type="button"
                     className={`w-full flex items-center gap-3 p-3 rounded-xl border-2 transition-colors text-left ${
-                      isSelected ? 'border-blue-500 bg-blue-50' : 'border-gray-200 bg-white hover:bg-gray-50'
+                      isSelected ? 'border-navy-500 bg-navy-50' : 'border-gray-200 bg-white hover:bg-gray-50'
                     }`}
                     onClick={() => togglePermesso(p.id)}
                   >
                     {isSelected ? (
-                      <CheckSquare size={20} className="text-blue-600 shrink-0" />
+                      <CheckSquare size={20} className="text-terra-500 shrink-0" />
                     ) : (
                       <Square size={20} className="text-gray-300 shrink-0" />
                     )}

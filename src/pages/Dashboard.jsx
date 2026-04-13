@@ -24,10 +24,6 @@ export default function Dashboard() {
       .select('*, corrieri(nome), localita(copie_standard)')
       .eq('attivo', true)
 
-    if (!isAdmin && utente?.corriere_id) {
-      giriQuery = giriQuery.eq('corriere_id', utente.corriere_id)
-    }
-
     const { data: giri } = await giriQuery
 
     // Sessioni di oggi
@@ -41,7 +37,7 @@ export default function Dashboard() {
     settimaneFa.setDate(settimaneFa.getDate() - 7)
     const { data: rimanenze } = await supabase
       .from('storico_rimanenze')
-      .select('*, localita(nome_locale, giro_id)')
+      .select('*, localita(nome_locale)')
       .gte('data', settimaneFa.toISOString().split('T')[0])
       .gt('rimanenze', 5)
       .order('data', { ascending: false })

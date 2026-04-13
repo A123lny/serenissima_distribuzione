@@ -16,7 +16,6 @@ const PERMESSI_DISPONIBILI = [
 
 export default function UtentiPage() {
   const [utenti, setUtenti] = useState([])
-  const [corrieri, setCorrieri] = useState([])
   const [loading, setLoading] = useState(true)
   const [showModal, setShowModal] = useState(false)
   const [editing, setEditing] = useState(null)
@@ -26,7 +25,7 @@ export default function UtentiPage() {
     username: '',
     password: '',
     ruolo: 'corriere',
-    corriere_id: '',
+    veicolo: '',
     permessi: ['dashboard', 'consegne'],
   })
 
@@ -36,13 +35,10 @@ export default function UtentiPage() {
     setLoading(true)
     const { data: ut } = await supabase
       .from('codici_accesso')
-      .select('*, corrieri(nome)')
+      .select('*, corrieri(nome, veicolo)')
       .eq('attivo', true)
       .order('ruolo')
     if (ut) setUtenti(ut)
-
-    const { data: corr } = await supabase.from('corrieri').select('*').eq('attivo', true)
-    if (corr) setCorrieri(corr)
     setLoading(false)
   }
 
@@ -53,12 +49,12 @@ export default function UtentiPage() {
         username: utente.username || '',
         password: utente.password || '',
         ruolo: utente.ruolo,
-        corriere_id: utente.corriere_id || '',
+        veicolo: utente.corrieri?.veicolo || '',
         permessi: utente.permessi || [],
       })
     } else {
       setEditing(null)
-      setForm({ username: '', password: '', ruolo: 'corriere', corriere_id: '', permessi: ['dashboard', 'consegne'] })
+      setForm({ username: '', password: '', ruolo: 'corriere', veicolo: '', permessi: ['dashboard', 'consegne'] })
     }
     setShowModal(true)
   }
@@ -73,20 +69,37 @@ export default function UtentiPage() {
   }
 
   const handleSelectAll = () => {
-    setForm(prev => ({
-      ...prev,
-      permessi: PERMESSI_DISPONIBILI.map(p => p.id),
-    }))
+    setForm(prev => ({ ...prev, permessi: PERMESSI_DISPONIBILI.map(p => p.id) }))
   }
 
   const handleSave = async () => {
     if (!form.username.trim() || !form.password.trim()) return
 
+    let corriereId = editing?.corriere_id || null
+
+    // Se e' un corriere, crea o aggiorna il corriere automaticamente
+    if (form.ruolo === 'corriere') {
+      if (corriereId) {
+        // Aggiorna corriere esistente
+        await supabase.from('corrieri').update({
+          nome: form.username.trim(),
+          veicolo: form.veicolo.trim() || null,
+        }).eq('id', corriereId)
+      } else {
+        // Crea nuovo corriere
+        const { data: newCorriere } = await supabase.from('corrieri').insert({
+          nome: form.username.trim(),
+          veicolo: form.veicolo.trim() || null,
+        }).select().single()
+        if (newCorriere) corriereId = newCorriere.id
+      }
+    }
+
     const data = {
       username: form.username.trim(),
       password: form.password.trim(),
       ruolo: form.ruolo,
-      corriere_id: form.corriere_id || null,
+      corriere_id: form.ruolo === 'corriere' ? corriereId : null,
       codice: form.username.trim().toUpperCase(),
       permessi: form.permessi,
     }
@@ -127,7 +140,6 @@ export default function UtentiPage() {
         </Button>
       </div>
 
-      {/* Lista utenti */}
       <div className="space-y-3">
         {utenti.map(u => (
           <div key={u.id} className="bg-white border border-gray-200 rounded-xl p-4">
@@ -150,10 +162,9 @@ export default function UtentiPage() {
                       {showPasswords[u.id] ? <EyeOff size={14} /> : <Eye size={14} />}
                     </button>
                   </div>
-                  {u.corrieri?.nome && (
-                    <p className="text-sm text-gray-500 mt-1">Corriere: {u.corrieri.nome}</p>
+                  {u.corrieri?.veicolo && (
+                    <p className="text-sm text-gray-500 mt-1">Veicolo: {u.corrieri.veicolo}</p>
                   )}
-                  {/* Permessi */}
                   <div className="flex flex-wrap gap-1 mt-2">
                     {(u.permessi || []).map(p => (
                       <span key={p} className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">
@@ -179,7 +190,6 @@ export default function UtentiPage() {
         ))}
       </div>
 
-      {/* Modale crea/modifica utente */}
       <Modal isOpen={showModal} onClose={() => setShowModal(false)} title={editing ? 'Modifica Utente' : 'Nuovo Utente'}>
         <div className="space-y-4">
           <div>
@@ -188,7 +198,7 @@ export default function UtentiPage() {
               className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 focus:border-navy-500 focus:outline-none"
               value={form.username}
               onChange={e => setForm({ ...form, username: e.target.value })}
-              placeholder="Es. mario, admin2"
+              placeholder="Es. mario, daniel"
               autoComplete="off"
             />
           </div>
@@ -219,19 +229,16 @@ export default function UtentiPage() {
 
           {form.ruolo === 'corriere' && (
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Collega a corriere (opzionale)</label>
-              <select
+              <label className="block text-sm font-medium text-gray-700 mb-1">Veicolo (opzionale)</label>
+              <input
                 className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 focus:border-navy-500 focus:outline-none"
-                value={form.corriere_id}
-                onChange={e => setForm({ ...form, corriere_id: e.target.value })}
-              >
-                <option value="">Nessun corriere collegato</option>
-                {corrieri.map(c => <option key={c.id} value={c.id}>{c.nome}</option>)}
-              </select>
+                value={form.veicolo}
+                onChange={e => setForm({ ...form, veicolo: e.target.value })}
+                placeholder="Es. Fiat Punto, Scooter"
+              />
             </div>
           )}
 
-          {/* Permessi */}
           <div>
             <div className="flex items-center justify-between mb-2">
               <label className="block text-sm font-medium text-gray-700">Permessi (pagine visibili)</label>

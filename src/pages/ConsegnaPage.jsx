@@ -62,23 +62,38 @@ export default function ConsegnaPage() {
     }
   }, [sessione])
 
-  // Carica zone e localita del giro selezionato
+  // Carica zone e localita del giro selezionato (con ordine specifico del giro)
   useEffect(() => {
     if (!selGiro) return
     const load = async () => {
       const { data: gzData } = await supabase
         .from('giri_zone').select('*, zone(*)').eq('giro_id', selGiro).order('ordine')
-      const zoneList = (gzData || []).map(gz => gz.zone).filter(z => z && z.attivo !== false)
+      const gzRecords = (gzData || []).filter(gz => gz.zone && gz.zone.attivo !== false)
+      const zoneList = gzRecords.map(gz => gz.zone)
       const zoneIds = zoneList.map(z => z.id)
       setZoneGiro(zoneList)
 
       if (zoneIds.length > 0) {
         const { data: locData } = await supabase
-          .from('localita').select('*').in('zona_id', zoneIds).eq('attivo', true).order('ordine')
+          .from('localita').select('*').in('zona_id', zoneIds).eq('attivo', true)
         if (locData) {
           const ordinati = []
-          for (const zona of zoneList) {
-            locData.filter(l => l.zona_id === zona.id).forEach(l => ordinati.push({
+          for (const gz of gzRecords) {
+            const zona = gz.zone
+            let locsZona = locData.filter(l => l.zona_id === zona.id)
+            const ordineCustom = gz.ordine_localita || []
+
+            if (ordineCustom.length > 0) {
+              locsZona.sort((a, b) => {
+                const idxA = ordineCustom.indexOf(a.id)
+                const idxB = ordineCustom.indexOf(b.id)
+                return (idxA === -1 ? 999 : idxA) - (idxB === -1 ? 999 : idxB)
+              })
+            } else {
+              locsZona.sort((a, b) => (a.ordine || 0) - (b.ordine || 0))
+            }
+
+            locsZona.forEach(l => ordinati.push({
               localita_id: l.id,
               nome: l.nome_locale,
               indirizzo: l.indirizzo,

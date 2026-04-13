@@ -99,7 +99,7 @@ export function useGiri(corriereId = null) {
     const { data: giriData, error } = await query
     if (error) { setLoading(false); return }
 
-    // Per ogni giro, carica le zone collegate (con localita)
+    // Per ogni giro, carica le zone collegate (con localita ordinate per giro)
     const giriCompleti = await Promise.all((giriData || []).map(async (giro) => {
       const { data: gzData } = await supabase
         .from('giri_zone')
@@ -107,7 +107,8 @@ export function useGiri(corriereId = null) {
         .eq('giro_id', giro.id)
         .order('ordine')
 
-      const zoneCollegate = (gzData || []).map(gz => gz.zone).filter(z => z && z.attivo !== false)
+      const gzRecords = (gzData || []).filter(gz => gz.zone && gz.zone.attivo !== false)
+      const zoneCollegate = gzRecords.map(gz => gz.zone)
       const zoneIds = zoneCollegate.map(z => z.id)
 
       // Carica localita per tutte le zone del giro
@@ -118,20 +119,39 @@ export function useGiri(corriereId = null) {
           .select('*')
           .in('zona_id', zoneIds)
           .eq('attivo', true)
-          .order('ordine')
         tutteLocalita = locData || []
       }
 
-      const zoneConLocalita = zoneCollegate.map(zona => ({
-        ...zona,
-        localita: tutteLocalita.filter(l => l.zona_id === zona.id),
-      }))
+      // Ordina localita per giro usando ordine_localita da giri_zone
+      const zoneConLocalita = gzRecords.map(gz => {
+        const zona = gz.zone
+        const locsZona = tutteLocalita.filter(l => l.zona_id === zona.id)
+        const ordineCustom = gz.ordine_localita || []
+
+        // Se c'e' un ordine personalizzato per questo giro, usalo
+        if (ordineCustom.length > 0) {
+          locsZona.sort((a, b) => {
+            const idxA = ordineCustom.indexOf(a.id)
+            const idxB = ordineCustom.indexOf(b.id)
+            // Localita non nell'ordine vanno in fondo
+            return (idxA === -1 ? 999 : idxA) - (idxB === -1 ? 999 : idxB)
+          })
+        } else {
+          // Altrimenti usa ordine master
+          locsZona.sort((a, b) => (a.ordine || 0) - (b.ordine || 0))
+        }
+
+        return { ...zona, localita: locsZona, giroZonaId: gz.id }
+      })
+
+      // Tutte le localita ordinate per come appaiono nel giro
+      const tutteOrdinate = zoneConLocalita.flatMap(z => z.localita)
 
       return {
         ...giro,
         zoneIds,
         zone: zoneConLocalita,
-        tutteLocalita,
+        tutteLocalita: tutteOrdinate,
       }
     }))
 
@@ -189,10 +209,13 @@ export function useGiri(corriereId = null) {
     await fetchGiri()
   }
 
-  const riordinaLocalitaGiro = async (localitaIds) => {
-    await Promise.all(localitaIds.map((id, idx) =>
-      supabase.from('localita').update({ ordine: idx }).eq('id', id)
-    ))
+  const riordinaLocalitaGiro = async (giroId, zonaId, localitaIds) => {
+    // Salva ordine personalizzato per questa zona in questo giro
+    await supabase
+      .from('giri_zone')
+      .update({ ordine_localita: localitaIds })
+      .eq('giro_id', giroId)
+      .eq('zona_id', zonaId)
     await fetchGiri()
   }
 

@@ -140,13 +140,13 @@ export default function GiriPage() {
     await riordinaZoneGiro(giro.id, zoneList.map(z => z.id))
   }
 
-  // Spostamento localita dentro una zona (nel tab Giri)
-  const spostaLocalitaGiro = async (localitaList, index, direzione) => {
+  // Spostamento localita dentro una zona (nel tab Giri) - ordine specifico per giro
+  const spostaLocalitaGiro = async (giroId, zonaId, localitaList, index, direzione) => {
     const locs = [...localitaList]
     const newIndex = index + direzione
     if (newIndex < 0 || newIndex >= locs.length) return
     ;[locs[index], locs[newIndex]] = [locs[newIndex], locs[index]]
-    await riordinaLocalitaGiro(locs.map(l => l.id))
+    await riordinaLocalitaGiro(giroId, zonaId, locs.map(l => l.id))
   }
 
   // Giro
@@ -433,10 +433,10 @@ export default function GiriPage() {
                                     <span className="text-xs text-terra-500">{loc.copie_standard} copie</span>
                                   </div>
                                   <div className="flex gap-0.5">
-                                    <button onClick={() => spostaLocalitaGiro(zona.localita, idx, -1)} disabled={idx === 0} className="p-0.5 hover:bg-gray-200 rounded disabled:opacity-30">
+                                    <button onClick={() => spostaLocalitaGiro(giro.id, zona.id, zona.localita, idx, -1)} disabled={idx === 0} className="p-0.5 hover:bg-gray-200 rounded disabled:opacity-30">
                                       <ArrowUp size={12} />
                                     </button>
-                                    <button onClick={() => spostaLocalitaGiro(zona.localita, idx, 1)} disabled={idx === zona.localita.length - 1} className="p-0.5 hover:bg-gray-200 rounded disabled:opacity-30">
+                                    <button onClick={() => spostaLocalitaGiro(giro.id, zona.id, zona.localita, idx, 1)} disabled={idx === zona.localita.length - 1} className="p-0.5 hover:bg-gray-200 rounded disabled:opacity-30">
                                       <ArrowDown size={12} />
                                     </button>
                                   </div>

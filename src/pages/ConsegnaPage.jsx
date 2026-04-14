@@ -36,6 +36,7 @@ export default function ConsegnaPage() {
 
   const [showConfirmFine, setShowConfirmFine] = useState(false)
   const [showConfirmAnnulla, setShowConfirmAnnulla] = useState(false)
+  const [testoConfermaAnnulla, setTestoConfermaAnnulla] = useState('')
 
   useEffect(() => {
     loadInitialData()
@@ -178,12 +179,18 @@ export default function ConsegnaPage() {
     await annullaSessione()
     ferma()
     setShowConfirmAnnulla(false)
+    setTestoConfermaAnnulla('')
     setFase('preparazione')
     setSelGiro('')
     setPrepData([])
     setFermataIdx(0)
     setResiCorrente('')
     setModificaAttiva(false)
+  }
+
+  const chiudiConfermaAnnulla = () => {
+    setShowConfirmAnnulla(false)
+    setTestoConfermaAnnulla('')
   }
 
   const handleSalvaRiepilogo = async () => {
@@ -414,14 +421,36 @@ export default function ConsegnaPage() {
           </div>
         )}
 
-        <Modal isOpen={showConfirmAnnulla} onClose={() => setShowConfirmAnnulla(false)} title="Annulla giro">
+        <Modal isOpen={showConfirmAnnulla} onClose={chiudiConfermaAnnulla} title="⚠️ Annulla giro">
           <div className="space-y-4">
-            <p className="text-gray-600">
-              Vuoi annullare completamente questo giro? La sessione e tutte le consegne verranno <strong>eliminate definitivamente</strong> e non saranno recuperabili.
-            </p>
+            <div className="bg-red-50 border-2 border-red-200 rounded-xl p-4">
+              <p className="text-red-800 font-semibold mb-2">Attenzione: azione irreversibile</p>
+              <p className="text-sm text-red-700">
+                La sessione e tutte le {consegne.length} consegne verranno <strong>eliminate definitivamente</strong> dal database. Non potrai recuperarle.
+              </p>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Per confermare, scrivi <span className="font-bold text-red-600">ANNULLA</span> qui sotto:
+              </label>
+              <input
+                type="text"
+                className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 text-base focus:border-red-500 focus:outline-none uppercase"
+                value={testoConfermaAnnulla}
+                onChange={e => setTestoConfermaAnnulla(e.target.value)}
+                placeholder="ANNULLA"
+              />
+            </div>
             <div className="flex gap-3">
-              <Button variant="secondary" className="flex-1" onClick={() => setShowConfirmAnnulla(false)}>Torna indietro</Button>
-              <Button variant="danger" className="flex-1" onClick={confermaAnnulla}>Annulla giro</Button>
+              <Button variant="secondary" className="flex-1" onClick={chiudiConfermaAnnulla}>Torna indietro</Button>
+              <Button
+                variant="danger"
+                className="flex-1"
+                onClick={confermaAnnulla}
+                disabled={testoConfermaAnnulla.trim().toUpperCase() !== 'ANNULLA'}
+              >
+                Annulla giro
+              </Button>
             </div>
           </div>
         </Modal>

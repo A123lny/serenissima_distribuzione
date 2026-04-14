@@ -103,6 +103,16 @@ export function useConsegne() {
     return { data: { durata_minuti: durataMinuti } }
   }
 
+  const annullaSessione = async () => {
+    if (!sessione) return { error: 'Nessuna sessione attiva' }
+    await supabase.from('consegne_giornaliere').delete().eq('sessione_id', sessione.id)
+    const { error } = await supabase.from('sessioni_consegna').delete().eq('id', sessione.id)
+    if (error) return { error }
+    setSessione(null)
+    setConsegne([])
+    return { data: true }
+  }
+
   const caricaSessioneAttiva = useCallback(async (corriereId) => {
     const oggi = new Date().toISOString().split('T')[0]
     const { data } = await supabase
@@ -127,6 +137,6 @@ export function useConsegne() {
   return {
     sessione, consegne, loading,
     iniziaSessione, aggiornaConsegna, completaFermata, terminaSessione,
-    caricaSessioneAttiva,
+    annullaSessione, caricaSessioneAttiva,
   }
 }

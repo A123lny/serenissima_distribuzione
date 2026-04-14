@@ -12,7 +12,7 @@ import Modal from '../components/UI/Modal'
 
 export default function ConsegnaPage() {
   const { utente } = useAuth()
-  const { sessione, consegne, loading, iniziaSessione, aggiornaConsegna, completaFermata, terminaSessione, caricaSessioneAttiva } = useConsegne()
+  const { sessione, consegne, loading, iniziaSessione, aggiornaConsegna, completaFermata, terminaSessione, annullaSessione, caricaSessioneAttiva } = useConsegne()
   const { formato, avvia, ferma } = useTimer(sessione?.inizio_consegna)
 
   const [fase, setFase] = useState('preparazione')
@@ -35,6 +35,7 @@ export default function ConsegnaPage() {
   const [noteSessione, setNoteSessione] = useState('')
 
   const [showConfirmFine, setShowConfirmFine] = useState(false)
+  const [showConfirmAnnulla, setShowConfirmAnnulla] = useState(false)
 
   useEffect(() => {
     loadInitialData()
@@ -171,6 +172,18 @@ export default function ConsegnaPage() {
     ferma()
     setShowConfirmFine(false)
     setFase('riepilogo')
+  }
+
+  const confermaAnnulla = async () => {
+    await annullaSessione()
+    ferma()
+    setShowConfirmAnnulla(false)
+    setFase('preparazione')
+    setSelGiro('')
+    setPrepData([])
+    setFermataIdx(0)
+    setResiCorrente('')
+    setModificaAttiva(false)
   }
 
   const handleSalvaRiepilogo = async () => {
@@ -393,8 +406,25 @@ export default function ConsegnaPage() {
                 Termina in anticipo ({consegne.length - completate} fermate rimanenti)
               </button>
             )}
+
+            <button onClick={() => setShowConfirmAnnulla(true)}
+              className="w-full text-center text-sm text-red-500 py-2 underline">
+              Annulla giro (elimina sessione)
+            </button>
           </div>
         )}
+
+        <Modal isOpen={showConfirmAnnulla} onClose={() => setShowConfirmAnnulla(false)} title="Annulla giro">
+          <div className="space-y-4">
+            <p className="text-gray-600">
+              Vuoi annullare completamente questo giro? La sessione e tutte le consegne verranno <strong>eliminate definitivamente</strong> e non saranno recuperabili.
+            </p>
+            <div className="flex gap-3">
+              <Button variant="secondary" className="flex-1" onClick={() => setShowConfirmAnnulla(false)}>Torna indietro</Button>
+              <Button variant="danger" className="flex-1" onClick={confermaAnnulla}>Annulla giro</Button>
+            </div>
+          </div>
+        </Modal>
 
         <Modal isOpen={showConfirmFine} onClose={() => setShowConfirmFine(false)} title="Conferma fine consegne">
           <div className="space-y-4">

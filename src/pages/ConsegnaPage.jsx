@@ -12,7 +12,7 @@ import Modal from '../components/UI/Modal'
 
 export default function ConsegnaPage() {
   const { utente } = useAuth()
-  const { sessione, consegne, loading, iniziaSessione, completaFermata, terminaSessione, caricaSessioneAttiva } = useConsegne()
+  const { sessione, consegne, loading, iniziaSessione, aggiornaConsegna, completaFermata, terminaSessione, caricaSessioneAttiva } = useConsegne()
   const { formato, avvia, ferma } = useTimer(sessione?.inizio_consegna)
 
   const [fase, setFase] = useState('preparazione')
@@ -28,6 +28,7 @@ export default function ConsegnaPage() {
   // Consegna
   const [fermataIdx, setFermataIdx] = useState(0)
   const [resiCorrente, setResiCorrente] = useState('')
+  const [modificaAttiva, setModificaAttiva] = useState(false)
 
   // Riepilogo
   const [kmPercorsi, setKmPercorsi] = useState('')
@@ -132,16 +133,29 @@ export default function ConsegnaPage() {
   const handleConfermaFermata = async () => {
     if (!fermataCorrente) return
     await completaFermata(fermataCorrente.id, parseInt(resiCorrente) || 0)
+    setModificaAttiva(false)
     if (fermataIdx < consegne.length - 1) {
       setFermataIdx(fermataIdx + 1)
       setResiCorrente('')
     }
   }
 
+  const handleSalvaModifica = async () => {
+    if (!fermataCorrente) return
+    await aggiornaConsegna(fermataCorrente.id, { resi_ritirati: parseInt(resiCorrente) || 0 })
+    setModificaAttiva(false)
+  }
+
+  const handleAttivaModifica = () => {
+    setResiCorrente(fermataCorrente?.resi_ritirati ?? '')
+    setModificaAttiva(true)
+  }
+
   const handleAvanti = () => {
     if (fermataIdx < consegne.length - 1) {
       setFermataIdx(fermataIdx + 1)
       setResiCorrente(consegne[fermataIdx + 1]?.resi_ritirati || '')
+      setModificaAttiva(false)
     }
   }
 
@@ -149,6 +163,7 @@ export default function ConsegnaPage() {
     if (fermataIdx > 0) {
       setFermataIdx(fermataIdx - 1)
       setResiCorrente(consegne[fermataIdx - 1]?.resi_ritirati || '')
+      setModificaAttiva(false)
     }
   }
 
@@ -310,13 +325,19 @@ export default function ConsegnaPage() {
                 <p className="text-4xl font-bold text-navy-800">{fermataCorrente.copie_consegnate}</p>
               </div>
 
-              {isCompletata ? (
-                <div className="flex items-center gap-2 bg-green-100 rounded-xl p-4">
-                  <CheckCircle2 size={24} className="text-green-600" />
-                  <div>
-                    <p className="font-semibold text-green-800">Consegna completata</p>
-                    <p className="text-sm text-green-700">Resi ritirati: {fermataCorrente.resi_ritirati || 0}</p>
+              {isCompletata && !modificaAttiva ? (
+                <div className="space-y-3">
+                  <div className="flex items-center gap-2 bg-green-100 rounded-xl p-4">
+                    <CheckCircle2 size={24} className="text-green-600" />
+                    <div>
+                      <p className="font-semibold text-green-800">Consegna completata</p>
+                      <p className="text-sm text-green-700">Resi ritirati: {fermataCorrente.resi_ritirati || 0}</p>
+                    </div>
                   </div>
+                  <Button size="lg" variant="secondary" className="w-full flex items-center justify-center gap-2"
+                    onClick={handleAttivaModifica}>
+                    Modifica resi
+                  </Button>
                 </div>
               ) : (
                 <>
@@ -329,10 +350,23 @@ export default function ConsegnaPage() {
                       placeholder="0"
                     />
                   </div>
-                  <Button size="lg" variant="success" className="w-full flex items-center justify-center gap-2 text-lg"
-                    onClick={handleConfermaFermata}>
-                    <CheckCircle2 size={24} />Conferma Consegna
-                  </Button>
+                  {modificaAttiva ? (
+                    <div className="flex gap-2">
+                      <Button size="lg" variant="secondary" className="flex-1"
+                        onClick={() => { setModificaAttiva(false); setResiCorrente('') }}>
+                        Annulla
+                      </Button>
+                      <Button size="lg" variant="success" className="flex-1 flex items-center justify-center gap-2"
+                        onClick={handleSalvaModifica}>
+                        <CheckCircle2 size={24} />Salva
+                      </Button>
+                    </div>
+                  ) : (
+                    <Button size="lg" variant="success" className="w-full flex items-center justify-center gap-2 text-lg"
+                      onClick={handleConfermaFermata}>
+                      <CheckCircle2 size={24} />Conferma Consegna
+                    </Button>
+                  )}
                 </>
               )}
             </div>

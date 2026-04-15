@@ -50,10 +50,8 @@ export default function ConsegnaPage() {
       .from('giri').select('*').eq('attivo', true).order('nome_giro')
     if (giriData) setTuttiGiri(giriData)
 
-    // Carica sessione attiva (se esiste)
-    if (utente?.corriere_id) {
-      await caricaSessioneAttiva(utente.corriere_id)
-    }
+    // Carica sessione attiva (se esiste) - anche per admin senza corriere
+    await caricaSessioneAttiva(utente?.corriere_id || null)
 
     setPageLoading(false)
   }

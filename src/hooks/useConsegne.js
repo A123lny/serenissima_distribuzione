@@ -115,13 +115,22 @@ export function useConsegne() {
 
   const caricaSessioneAttiva = useCallback(async (corriereId) => {
     const oggi = new Date().toISOString().split('T')[0]
-    const { data } = await supabase
+    let query = supabase
       .from('sessioni_consegna')
       .select('*')
-      .eq('corriere_id', corriereId)
       .eq('data_consegna', oggi)
       .is('fine_consegna', null)
-      .single()
+      .order('inizio_consegna', { ascending: false })
+      .limit(1)
+
+    if (corriereId) {
+      query = query.eq('corriere_id', corriereId)
+    } else {
+      query = query.is('corriere_id', null)
+    }
+
+    const { data: rows } = await query
+    const data = rows && rows[0]
 
     if (data) {
       setSessione(data)

@@ -5,7 +5,7 @@ import { useConsegne } from '../hooks/useConsegne'
 import { useTimer } from '../hooks/useTimer'
 import {
   Play, Square, ChevronLeft, ChevronRight, Navigation,
-  Clock, Save, MapPinned, Package, CheckCircle2
+  Clock, Save, MapPinned, Package, CheckCircle2, AlertCircle
 } from 'lucide-react'
 import Button from '../components/UI/Button'
 import Modal from '../components/UI/Modal'
@@ -334,7 +334,10 @@ export default function ConsegnaPage() {
               )}
 
               {fermataCorrente.localita?.note && (
-                <p className="text-sm text-gray-500 italic mb-3">{fermataCorrente.localita.note}</p>
+                <div className="bg-amber-50 border-l-4 border-amber-500 rounded-lg p-3 mb-3 flex gap-2">
+                  <AlertCircle size={20} className="text-amber-600 flex-shrink-0 mt-0.5" />
+                  <p className="text-base font-bold text-amber-900">{fermataCorrente.localita.note}</p>
+                </div>
               )}
 
               <div className="bg-navy-50 rounded-xl p-4 mb-4">

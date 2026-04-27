@@ -35,13 +35,15 @@ export async function geocodificaTutte(localita, onProgress) {
 /**
  * Chiama OSRM /trip per ottimizzare l'ordine di visita.
  *
- * OSRM waypoints response:
- * - Ogni waypoint ha un campo "waypoint_index" che indica la posizione
- *   nell'ordine ottimizzato del viaggio.
- * - L'array waypoints è nello stesso ordine dell'input (indice 0 = primo punto inviato).
+ * Parametri OSRM:
+ * - source=first: il primo punto è il punto di partenza (fisso)
+ * - roundtrip=true: OSRM ottimizza un circuito completo (TSP)
+ *   Questo dà la migliore ottimizzazione perché OSRM è libero di
+ *   scegliere l'ordine di TUTTI i punti intermedi.
  *
- * Per ricostruire l'ordine: ordiniamo i waypoint per waypoint_index,
- * e per ognuno recuperiamo l'elemento originale tramite la posizione nell'array.
+ * OSRM waypoints response:
+ * - L'array waypoints è nello stesso ordine dell'input.
+ * - Ogni waypoint ha waypoint_index = posizione nel viaggio ottimizzato.
  */
 export async function calcolaPercorsoOttimizzato(localitaConCoord) {
   const valide = localitaConCoord.filter(l => l.lat && l.lng)
@@ -53,18 +55,18 @@ export async function calcolaPercorsoOttimizzato(localitaConCoord) {
   const coordinates = valide.map(l => `${l.lng},${l.lat}`).join(';')
 
   try {
+    // roundtrip=true + source=first: parte dal primo punto, OSRM ottimizza
+    // liberamente l'ordine di tutti gli altri punti (TSP completo)
     const res = await fetch(
-      `${OSRM_URL}/trip/v1/driving/${coordinates}?source=first&roundtrip=false&destination=last&overview=false&steps=false`
+      `${OSRM_URL}/trip/v1/driving/${coordinates}?source=first&roundtrip=true&overview=false&steps=false`
     )
     const data = await res.json()
 
     if (data.code === 'Ok' && data.trips && data.trips[0]) {
       const trip = data.trips[0]
 
-      // data.waypoints è nello stesso ordine dell'input.
-      // Ogni waypoint ha waypoint_index = posizione nel viaggio ottimizzato.
-      // Creiamo un array di coppie [waypoint_index, indice_originale]
-      // e ordiniamo per waypoint_index.
+      // data.waypoints[i] corrisponde a valide[i] (stesso ordine dell'input).
+      // waypoint_index = posizione nel viaggio ottimizzato.
       const coppie = data.waypoints.map((wp, idxOriginale) => ({
         waypoint_index: wp.waypoint_index,
         idxOriginale,
@@ -72,6 +74,8 @@ export async function calcolaPercorsoOttimizzato(localitaConCoord) {
 
       coppie.sort((a, b) => a.waypoint_index - b.waypoint_index)
 
+      // Rimuovi il ritorno al punto di partenza: prendiamo solo la sequenza
+      // di andata (dal punto di partenza all'ultimo punto utile)
       const ordine = coppie.map(c => valide[c.idxOriginale].id)
 
       return {

@@ -58,37 +58,33 @@ async function getMatriceDistanze(punti) {
 }
 
 /**
- * Algoritmo Nearest Neighbor: partendo da startIdx, visita sempre il punto
- * non ancora visitato più vicino (per durata stradale).
+ * Nearest Neighbor: partendo da startIdx, va sempre al punto più vicino.
  */
 function nearestNeighbor(matrice, startIdx) {
   const n = matrice.length
   const visitati = new Set([startIdx])
   const percorso = [startIdx]
-
   let corrente = startIdx
+
   while (visitati.size < n) {
     let migliore = -1
     let miglioreDist = Infinity
-
     for (let i = 0; i < n; i++) {
       if (!visitati.has(i) && matrice[corrente][i] < miglioreDist) {
         miglioreDist = matrice[corrente][i]
         migliore = i
       }
     }
-
     if (migliore === -1) break
     visitati.add(migliore)
     percorso.push(migliore)
     corrente = migliore
   }
-
   return percorso
 }
 
 /**
- * Calcola la distanza totale di un percorso dato.
+ * Distanza totale di un percorso.
  */
 function distanzaPercorso(percorso, matrice) {
   let totale = 0
@@ -99,37 +95,82 @@ function distanzaPercorso(percorso, matrice) {
 }
 
 /**
- * Miglioramento 2-opt: scambia coppie di archi per ridurre la distanza totale.
- * Il primo punto (partenza) resta fisso.
+ * 2-opt: inverti segmenti per ridurre la distanza. Punto 0 (partenza) fisso.
  */
 function twoOpt(percorso, matrice) {
   const n = percorso.length
   let migliorato = true
-  let migliorPercorso = [...percorso]
+  let best = [...percorso]
+  let bestDist = distanzaPercorso(best, matrice)
 
   while (migliorato) {
     migliorato = false
-    // Partiamo da 1 (non 0) per non spostare il punto di partenza
     for (let i = 1; i < n - 1; i++) {
       for (let j = i + 1; j < n; j++) {
-        const nuovoPercorso = [...migliorPercorso]
-        // Inverti il segmento tra i e j
-        const segmento = nuovoPercorso.slice(i, j + 1).reverse()
-        nuovoPercorso.splice(i, j - i + 1, ...segmento)
-
-        if (distanzaPercorso(nuovoPercorso, matrice) < distanzaPercorso(migliorPercorso, matrice)) {
-          migliorPercorso = nuovoPercorso
+        const nuovo = [...best]
+        // Inverti segmento [i..j]
+        let left = i, right = j
+        while (left < right) {
+          [nuovo[left], nuovo[right]] = [nuovo[right], nuovo[left]]
+          left++
+          right--
+        }
+        const dist = distanzaPercorso(nuovo, matrice)
+        if (dist < bestDist) {
+          best = nuovo
+          bestDist = dist
           migliorato = true
         }
       }
     }
   }
-
-  return migliorPercorso
+  return best
 }
 
 /**
- * Fallback: distanza in linea d'aria (Haversine) quando OSRM non è disponibile.
+ * Or-opt: sposta una singola fermata in una posizione migliore. Punto 0 fisso.
+ */
+function orOpt(percorso, matrice) {
+  let best = [...percorso]
+  let bestDist = distanzaPercorso(best, matrice)
+  let migliorato = true
+
+  while (migliorato) {
+    migliorato = false
+    for (let i = 1; i < best.length; i++) {
+      for (let j = 1; j < best.length; j++) {
+        if (i === j) continue
+        const nuovo = [...best]
+        const [elemento] = nuovo.splice(i, 1)
+        const insertIdx = j > i ? j - 1 : j
+        nuovo.splice(insertIdx, 0, elemento)
+
+        const dist = distanzaPercorso(nuovo, matrice)
+        if (dist < bestDist) {
+          best = nuovo
+          bestDist = dist
+          migliorato = true
+        }
+      }
+    }
+  }
+  return best
+}
+
+/**
+ * Genera un percorso casuale (punto 0 fisso, resto shufflato).
+ */
+function percorsoRandom(n) {
+  const rest = Array.from({ length: n - 1 }, (_, i) => i + 1)
+  for (let i = rest.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [rest[i], rest[j]] = [rest[j], rest[i]]
+  }
+  return [0, ...rest]
+}
+
+/**
+ * Haversine: distanza in linea d'aria (fallback).
  */
 function haversine(lat1, lon1, lat2, lon2) {
   const R = 6371000
@@ -152,11 +193,15 @@ function creaMatriceHaversine(punti) {
 }
 
 /**
- * Calcola il percorso ottimizzato:
- * 1. Chiede a OSRM la matrice delle distanze stradali reali
- * 2. Applica Nearest Neighbor per trovare un buon percorso iniziale
- * 3. Migliora con 2-opt
- * 4. Se OSRM non risponde, fallback su distanze Haversine
+ * Ottimizzazione multi-strategia:
+ *
+ * 1. Matrice distanze stradali reali da OSRM /table (o Haversine come fallback)
+ * 2. Genera N soluzioni candidate:
+ *    - Nearest Neighbor dal punto di partenza
+ *    - Nearest Neighbor da ogni altro punto (riadattato con partenza fissa)
+ *    - Soluzioni casuali
+ * 3. Per ciascuna: applica 2-opt + Or-opt
+ * 4. Restituisce la migliore in assoluto
  */
 export async function calcolaPercorsoOttimizzato(localitaConCoord) {
   const valide = localitaConCoord.filter(l => l.lat && l.lng)
@@ -164,46 +209,65 @@ export async function calcolaPercorsoOttimizzato(localitaConCoord) {
     return { ordine: valide.map(l => l.id), distanzaTotale: 0, durataTotale: 0 }
   }
 
-  // Prova a ottenere matrice distanze stradali da OSRM
+  // Matrice distanze
   const matriceData = await getMatriceDistanze(valide)
-
-  let matrice
-  let matriceDistMetri
-  let usaOSRM = false
+  let matrice, matriceDistMetri, usaOSRM = false
 
   if (matriceData && matriceData.durate) {
     matrice = matriceData.durate
     matriceDistMetri = matriceData.distanze
     usaOSRM = true
   } else {
-    // Fallback: distanze in linea d'aria
     matrice = creaMatriceHaversine(valide)
     matriceDistMetri = matrice
   }
 
-  // Nearest Neighbor partendo dal primo punto (punto di partenza)
-  let percorso = nearestNeighbor(matrice, 0)
+  const n = valide.length
+  let bestPercorso = null
+  let bestDist = Infinity
 
-  // Migliora con 2-opt
-  percorso = twoOpt(percorso, matrice)
-
-  // Calcola distanza e durata totale
-  let distanzaTotale = 0
-  let durataTotale = 0
-  for (let i = 0; i < percorso.length - 1; i++) {
-    if (matriceDistMetri) {
-      distanzaTotale += matriceDistMetri[percorso[i]][percorso[i + 1]]
-    }
-    if (usaOSRM) {
-      durataTotale += matrice[percorso[i]][percorso[i + 1]]
+  const provaSoluzione = (percorso) => {
+    let p = twoOpt(percorso, matrice)
+    p = orOpt(p, matrice)
+    p = twoOpt(p, matrice) // secondo passaggio 2-opt dopo or-opt
+    const d = distanzaPercorso(p, matrice)
+    if (d < bestDist) {
+      bestDist = d
+      bestPercorso = p
     }
   }
 
-  const ordine = percorso.map(idx => valide[idx].id)
+  // Strategia 1: Nearest Neighbor dal punto di partenza
+  provaSoluzione(nearestNeighbor(matrice, 0))
+
+  // Strategia 2: Nearest Neighbor da ogni altro punto, poi rimetti 0 in testa
+  for (let start = 1; start < n; start++) {
+    const nn = nearestNeighbor(matrice, start)
+    // Rimetti il punto 0 in testa
+    const idx0 = nn.indexOf(0)
+    const riordinato = [0, ...nn.slice(idx0 + 1), ...nn.slice(0, idx0)]
+    provaSoluzione(riordinato)
+  }
+
+  // Strategia 3: Soluzioni casuali (più tentativi per istanze piccole)
+  const nRandom = Math.min(50, n * 5)
+  for (let i = 0; i < nRandom; i++) {
+    provaSoluzione(percorsoRandom(n))
+  }
+
+  // Calcola distanza e durata totale sul percorso migliore
+  let distanzaTotale = 0
+  let durataTotale = 0
+  for (let i = 0; i < bestPercorso.length - 1; i++) {
+    distanzaTotale += (matriceDistMetri || matrice)[bestPercorso[i]][bestPercorso[i + 1]]
+    if (usaOSRM) durataTotale += matrice[bestPercorso[i]][bestPercorso[i + 1]]
+  }
+
+  const ordine = bestPercorso.map(idx => valide[idx].id)
 
   return {
     ordine,
-    distanzaTotale: Math.round(distanzaTotale / 100) / 10, // metri -> km con 1 decimale
-    durataTotale: Math.round(durataTotale / 60), // secondi -> minuti
+    distanzaTotale: Math.round(distanzaTotale / 100) / 10,
+    durataTotale: Math.round(durataTotale / 60),
   }
 }

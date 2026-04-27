@@ -3,8 +3,9 @@ import { MapPin, Loader2, X } from 'lucide-react'
 
 const PHOTON_URL = 'https://photon.komoot.io/api'
 
-// Bounding box San Marino + area circostante (incluse zone di confine italiane)
-const BBOX = '12.35,43.88,12.55,43.99'
+// Centro di San Marino come bias per i risultati
+const SM_LAT = 43.9424
+const SM_LON = 12.4578
 
 export default function AddressAutocomplete({ value, onChange, onSelect, placeholder, className }) {
   const [suggerimenti, setSuggerimenti] = useState([])
@@ -35,7 +36,7 @@ export default function AddressAutocomplete({ value, onChange, onSelect, placeho
     setLoading(true)
     try {
       const res = await fetch(
-        `${PHOTON_URL}?q=${encodeURIComponent(testo + ' San Marino')}&limit=5&bbox=${BBOX}&lang=it`
+        `${PHOTON_URL}?q=${encodeURIComponent(testo + ' San Marino')}&limit=5&lat=${SM_LAT}&lon=${SM_LON}`
       )
       const data = await res.json()
 

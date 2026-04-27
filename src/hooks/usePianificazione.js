@@ -48,7 +48,7 @@ export function usePianificazione() {
     const risultati = []
 
     for (const assegnazione of corrieriZone) {
-      const { corriereId, zoneIds } = assegnazione
+      const { corriereId, zoneIds, partenzaLat, partenzaLng, partenzaDesc } = assegnazione
 
       const { data: locData } = await supabase
         .from('localita')
@@ -61,6 +61,7 @@ export function usePianificazione() {
       let distanza = 0
       let durata = 0
 
+      // Prepara le coordinate: punto di partenza come primo elemento
       const localitaConCoord = localita.map(l => ({
         id: l.id,
         lat: l.latitudine,
@@ -68,7 +69,19 @@ export function usePianificazione() {
       }))
 
       const conCoord = localitaConCoord.filter(l => l.lat && l.lng)
-      if (conCoord.length >= 2) {
+
+      // Se c'è un punto di partenza, lo aggiungiamo come primo punto
+      if (partenzaLat && partenzaLng && conCoord.length >= 1) {
+        const puntiConPartenza = [
+          { id: '__partenza__', lat: partenzaLat, lng: partenzaLng },
+          ...conCoord,
+        ]
+        const risultato = await calcolaPercorsoOttimizzato(puntiConPartenza)
+        // Rimuovi il punto di partenza dall'ordine finale
+        ordineOttimizzato = risultato.ordine.filter(id => id !== '__partenza__')
+        distanza = risultato.distanzaTotale
+        durata = risultato.durataTotale
+      } else if (conCoord.length >= 2) {
         const risultato = await calcolaPercorsoOttimizzato(conCoord)
         ordineOttimizzato = risultato.ordine
         distanza = risultato.distanzaTotale
@@ -121,6 +134,9 @@ export function usePianificazione() {
           giro_generato_id: giro?.id || null,
           zone_ids: zoneIds,
           ordine_ottimizzato: ordineOttimizzato,
+          punto_partenza_lat: partenzaLat || null,
+          punto_partenza_lng: partenzaLng || null,
+          punto_partenza_desc: partenzaDesc || null,
         })
         .select('*, corrieri(*)')
         .single()
@@ -165,7 +181,7 @@ export function usePianificazione() {
 
   const geocodificaEsalva = async (localitaId, indirizzo) => {
     const coords = await geocodificaIndirizzo(indirizzo)
-    if (coords) {
+    if (coords && localitaId) {
       await supabase
         .from('localita')
         .update({ latitudine: coords.lat, longitudine: coords.lng })

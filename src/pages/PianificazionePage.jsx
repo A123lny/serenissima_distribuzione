@@ -25,6 +25,8 @@ export default function PianificazionePage() {
   // Selezione
   const [selCorriere, setSelCorriere] = useState('')
   const [selZone, setSelZone] = useState([])
+  const [partenza, setPartenza] = useState('')
+  const [partenzaCoord, setPartenzaCoord] = useState(null) // { lat, lng }
   const [fase, setFase] = useState('caricamento') // caricamento | nuova | attiva | geocoding
 
   // Geocoding
@@ -118,11 +120,22 @@ export default function PianificazionePage() {
 
     const corriereSelezionato = corrieri.find(c => c.id === selCorriere)
 
+    // Risolvi coordinate punto di partenza
+    let pLat = partenzaCoord?.lat || null
+    let pLng = partenzaCoord?.lng || null
+    if (!pLat && partenza) {
+      const coords = await geocodificaEsalva(null, partenza)
+      if (coords) { pLat = coords.lat; pLng = coords.lng }
+    }
+
     const corrieriZone = [
       {
         corriereId: selCorriere,
         zoneIds: selZone,
         nomeCorrere: corriereSelezionato?.nome || 'Corriere 1',
+        partenzaLat: pLat,
+        partenzaLng: pLng,
+        partenzaDesc: partenza,
       },
     ]
 
@@ -537,12 +550,51 @@ export default function PianificazionePage() {
             </div>
           )}
 
+          {/* Punto di partenza */}
+          <div className="bg-white rounded-xl border-2 border-gray-200 p-4 space-y-3">
+            <label className="block text-sm font-medium text-gray-700">
+              <span className="flex items-center gap-2">
+                <Navigation size={16} className="text-terra-500" />
+                Punto di partenza
+              </span>
+            </label>
+            <input
+              className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 text-base focus:border-navy-500 focus:outline-none"
+              value={partenza}
+              onChange={e => { setPartenza(e.target.value); setPartenzaCoord(null) }}
+              placeholder="Es. Via Roma 15, Borgo Maggiore"
+            />
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <label className="block text-xs text-gray-500 mb-1">Latitudine</label>
+                <input
+                  type="number" step="0.0000001"
+                  className="w-full border-2 border-gray-200 rounded-xl px-3 py-2 text-sm focus:border-navy-500 focus:outline-none"
+                  value={partenzaCoord?.lat || ''}
+                  onChange={e => setPartenzaCoord(prev => ({ ...prev, lat: parseFloat(e.target.value) || 0 }))}
+                  placeholder="43.9367"
+                />
+              </div>
+              <div>
+                <label className="block text-xs text-gray-500 mb-1">Longitudine</label>
+                <input
+                  type="number" step="0.0000001"
+                  className="w-full border-2 border-gray-200 rounded-xl px-3 py-2 text-sm focus:border-navy-500 focus:outline-none"
+                  value={partenzaCoord?.lng || ''}
+                  onChange={e => setPartenzaCoord(prev => ({ ...prev, lng: parseFloat(e.target.value) || 0 }))}
+                  placeholder="12.4463"
+                />
+              </div>
+            </div>
+            <p className="text-xs text-gray-400">Inserisci l'indirizzo oppure le coordinate GPS da Google Maps. Il percorso partira da qui.</p>
+          </div>
+
           <Button
             size="lg"
             variant="success"
             className="w-full flex items-center justify-center gap-3 text-xl"
             onClick={handleVerificaCoordinate}
-            disabled={loading || selZone.length === zone.length}
+            disabled={loading || selZone.length === zone.length || (!partenza && !partenzaCoord?.lat)}
           >
             {loading ? (
               <Loader2 size={28} className="animate-spin" />

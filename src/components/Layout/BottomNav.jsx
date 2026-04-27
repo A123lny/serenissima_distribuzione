@@ -1,9 +1,10 @@
 import { NavLink } from 'react-router-dom'
-import { Home, Map, Truck, BarChart3, FileText, Users } from 'lucide-react'
+import { Home, Map, Truck, BarChart3, FileText, Users, Route } from 'lucide-react'
 import { useAuth } from '../../context/AuthContext'
 
 const pagine = [
   { to: '/', icon: Home, label: 'Home', permesso: 'dashboard' },
+  { to: '/pianificazione', icon: Route, label: 'Pianifica', permesso: 'pianificazione' },
   { to: '/giri', icon: Map, label: 'Giri', permesso: 'giri' },
   { to: '/consegna', icon: Truck, label: 'Consegne', permesso: 'consegne' },
   { to: '/storico', icon: BarChart3, label: 'Storico', permesso: 'storico' },

@@ -7,6 +7,7 @@ import Badge from '../components/UI/Badge'
 
 const PERMESSI_DISPONIBILI = [
   { id: 'dashboard', label: 'Dashboard', desc: 'Home con riepilogo' },
+  { id: 'pianificazione', label: 'Pianificazione', desc: 'Pianifica giri giornalieri' },
   { id: 'giri', label: 'Gestione Giri', desc: 'Crea e modifica zone, giri, localita' },
   { id: 'consegne', label: 'Consegne', desc: 'Effettua le consegne' },
   { id: 'storico', label: 'Storico', desc: 'Vedi storico rimanenze' },

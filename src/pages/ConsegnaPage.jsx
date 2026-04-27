@@ -45,10 +45,15 @@ export default function ConsegnaPage() {
   const loadInitialData = async () => {
     setPageLoading(true)
 
-    // Carica tutti i giri disponibili
+    // Carica tutti i giri disponibili (giornalieri di oggi prima, poi fissi)
+    const oggi = new Date().toISOString().split('T')[0]
     const { data: giriData } = await supabase
       .from('giri').select('*').eq('attivo', true).order('nome_giro')
-    if (giriData) setTuttiGiri(giriData)
+    if (giriData) {
+      const giornalieriOggi = giriData.filter(g => g.tipo === 'giornaliero' && g.data_pianificazione === oggi)
+      const fissi = giriData.filter(g => g.tipo !== 'giornaliero')
+      setTuttiGiri([...giornalieriOggi, ...fissi])
+    }
 
     // Carica sessione attiva (se esiste) - anche per admin senza corriere
     await caricaSessioneAttiva(utente?.corriere_id || null)
@@ -241,7 +246,11 @@ export default function ConsegnaPage() {
           <select className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 text-base focus:border-navy-500 focus:outline-none"
             value={selGiro} onChange={e => setSelGiro(e.target.value)}>
             <option value="">Seleziona giro</option>
-            {tuttiGiri.map(g => <option key={g.id} value={g.id}>{g.nome_giro || 'Giro senza nome'}</option>)}
+            {tuttiGiri.map(g => (
+              <option key={g.id} value={g.id}>
+                {g.tipo === 'giornaliero' ? '⭐ ' : ''}{g.nome_giro || 'Giro senza nome'}
+              </option>
+            ))}
           </select>
         </div>
 

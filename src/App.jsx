@@ -9,8 +9,10 @@ import ConsegnaPage from './pages/ConsegnaPage'
 import StoricoPage from './pages/StoricoPage'
 import ReportPage from './pages/ReportPage'
 import UtentiPage from './pages/UtentiPage'
+import PianificazionePage from './pages/PianificazionePage'
 
 const PAGINE_ORDINE = [
+  { path: '/pianificazione', permesso: 'pianificazione' },
   { path: '/giri', permesso: 'giri' },
   { path: '/consegna', permesso: 'consegne' },
   { path: '/storico', permesso: 'storico' },
@@ -59,6 +61,7 @@ function AppLayout() {
       <main className="max-w-2xl mx-auto">
         <Routes>
           <Route path="/" element={<ProtectedRoute><HomePage /></ProtectedRoute>} />
+          <Route path="/pianificazione" element={<ProtectedRoute permesso="pianificazione"><PianificazionePage /></ProtectedRoute>} />
           <Route path="/giri" element={<ProtectedRoute permesso="giri"><GiriPage /></ProtectedRoute>} />
           <Route path="/consegna" element={<ProtectedRoute permesso="consegne"><ConsegnaPage /></ProtectedRoute>} />
           <Route path="/storico" element={<ProtectedRoute permesso="storico"><StoricoPage /></ProtectedRoute>} />

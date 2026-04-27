@@ -48,7 +48,7 @@ export default function GiriPage() {
 
   // Forms
   const [zonaForm, setZonaForm] = useState({ nome_zona: '' })
-  const [locForm, setLocForm] = useState({ nome_locale: '', indirizzo: '', note: '', copie_standard: 0 })
+  const [locForm, setLocForm] = useState({ nome_locale: '', indirizzo: '', note: '', copie_standard: 0, latitudine: '', longitudine: '' })
   const [giroForm, setGiroForm] = useState({ nome_giro: '' })
   const [corriereForm, setCorriereForm] = useState({ nome: '', veicolo: '' })
   const [assegnaCorriereId, setAssegnaCorriereId] = useState('')
@@ -105,20 +105,27 @@ export default function GiriPage() {
         indirizzo: loc.indirizzo || '',
         note: loc.note || '',
         copie_standard: loc.copie_standard || 0,
+        latitudine: loc.latitudine || '',
+        longitudine: loc.longitudine || '',
       })
     } else {
       setEditingLocalita(null)
-      setLocForm({ nome_locale: '', indirizzo: '', note: '', copie_standard: 0 })
+      setLocForm({ nome_locale: '', indirizzo: '', note: '', copie_standard: 0, latitudine: '', longitudine: '' })
     }
     setShowLocalitaModal(true)
   }
 
   const handleSaveLocalita = async () => {
     if (!locForm.nome_locale.trim()) return
+    const daSalvare = {
+      ...locForm,
+      latitudine: locForm.latitudine !== '' ? parseFloat(locForm.latitudine) : null,
+      longitudine: locForm.longitudine !== '' ? parseFloat(locForm.longitudine) : null,
+    }
     if (editingLocalita) {
-      await updateLocalita(editingLocalita.id, locForm)
+      await updateLocalita(editingLocalita.id, daSalvare)
     } else {
-      await addLocalita({ ...locForm, zona_id: selectedZonaId, ordine: 0 })
+      await addLocalita({ ...daSalvare, zona_id: selectedZonaId, ordine: 0 })
     }
     setShowLocalitaModal(false)
   }
@@ -545,6 +552,31 @@ export default function GiriPage() {
               onChange={e => setLocForm({ ...locForm, copie_standard: parseInt(e.target.value) || 0 })}
             />
           </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Latitudine</label>
+              <input
+                type="number"
+                step="0.0000001"
+                className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 focus:border-navy-500 focus:outline-none"
+                value={locForm.latitudine}
+                onChange={e => setLocForm({ ...locForm, latitudine: e.target.value })}
+                placeholder="43.9367"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Longitudine</label>
+              <input
+                type="number"
+                step="0.0000001"
+                className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 focus:border-navy-500 focus:outline-none"
+                value={locForm.longitudine}
+                onChange={e => setLocForm({ ...locForm, longitudine: e.target.value })}
+                placeholder="12.4463"
+              />
+            </div>
+          </div>
+          <p className="text-xs text-gray-400">Cerca l'indirizzo su Google Maps, clicca col destro sul punto e copia le coordinate.</p>
           <Button className="w-full" onClick={handleSaveLocalita}>
             {editingLocalita ? 'Salva Modifiche' : 'Aggiungi Localita'}
           </Button>

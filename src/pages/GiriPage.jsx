@@ -8,6 +8,7 @@ import {
 } from 'lucide-react'
 import Button from '../components/UI/Button'
 import Modal from '../components/UI/Modal'
+import AddressAutocomplete from '../components/UI/AddressAutocomplete'
 import Badge from '../components/UI/Badge'
 
 export default function GiriPage() {
@@ -525,11 +526,18 @@ export default function GiriPage() {
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Indirizzo</label>
-            <input
-              className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 focus:border-navy-500 focus:outline-none"
+            <AddressAutocomplete
               value={locForm.indirizzo}
-              onChange={e => setLocForm({ ...locForm, indirizzo: e.target.value })}
-              placeholder="Via Roma 15, Borgo Maggiore"
+              onChange={val => setLocForm({ ...locForm, indirizzo: val })}
+              onSelect={({ indirizzo, latitudine, longitudine }) => {
+                setLocForm(prev => ({
+                  ...prev,
+                  indirizzo,
+                  latitudine: latitudine || prev.latitudine,
+                  longitudine: longitudine || prev.longitudine,
+                }))
+              }}
+              placeholder="Cerca indirizzo..."
             />
           </div>
           <div>

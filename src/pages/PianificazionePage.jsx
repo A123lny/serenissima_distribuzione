@@ -10,6 +10,7 @@ import {
 import Button from '../components/UI/Button'
 import Modal from '../components/UI/Modal'
 import Badge from '../components/UI/Badge'
+import AddressAutocomplete from '../components/UI/AddressAutocomplete'
 
 export default function PianificazionePage() {
   const { utente } = useAuth()
@@ -194,24 +195,31 @@ export default function PianificazionePage() {
     setDettaglioAss(ass)
   }
 
-  const apriMaps = (indirizzo) => {
-    window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(indirizzo)}`, '_blank')
+  const apriMaps = (loc) => {
+    // Usa coordinate se disponibili, altrimenti indirizzo
+    if (loc.latitudine && loc.longitudine) {
+      window.open(`https://www.google.com/maps/search/?api=1&query=${loc.latitudine},${loc.longitudine}`, '_blank')
+    } else if (loc.indirizzo) {
+      window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(loc.indirizzo + ', San Marino')}`, '_blank')
+    }
   }
 
   const apriNavigazioneCompleta = (localitaList) => {
     if (localitaList.length === 0) return
-    const waypoints = localitaList
-      .filter(l => l.indirizzo)
-      .map(l => encodeURIComponent(l.indirizzo))
-    if (waypoints.length === 0) return
 
-    const dest = waypoints[waypoints.length - 1]
-    const intermedi = waypoints.slice(0, -1).join('/')
+    // Usa coordinate per tutti i waypoint (preciso, no ambiguita)
+    const punti = localitaList
+      .filter(l => l.latitudine && l.longitudine)
+      .map(l => `${l.latitudine},${l.longitudine}`)
 
-    window.open(
-      `https://www.google.com/maps/dir/${intermedi}/${dest}`,
-      '_blank'
-    )
+    if (punti.length === 0) return
+
+    const origine = punti[0]
+    const destinazione = punti[punti.length - 1]
+    const intermedi = punti.slice(1, -1).join('|')
+
+    const url = `https://www.google.com/maps/dir/?api=1&origin=${origine}&destination=${destinazione}${intermedi ? '&waypoints=' + intermedi : ''}&travelmode=driving`
+    window.open(url, '_blank')
   }
 
   if (pageLoading) {
@@ -391,7 +399,7 @@ export default function PianificazionePage() {
                         </div>
                       )}
                       {loc.indirizzo && (
-                        <button onClick={() => apriMaps(loc.indirizzo)}
+                        <button onClick={() => apriMaps(loc)}
                           className="flex items-center gap-1 text-terra-500 text-xs mt-1 active:opacity-70">
                           <MapPin size={12} />
                           <span className="underline">{loc.indirizzo}</span>
@@ -558,11 +566,16 @@ export default function PianificazionePage() {
                 Punto di partenza
               </span>
             </label>
-            <input
-              className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 text-base focus:border-navy-500 focus:outline-none"
+            <AddressAutocomplete
               value={partenza}
-              onChange={e => { setPartenza(e.target.value); setPartenzaCoord(null) }}
-              placeholder="Es. Via Roma 15, Borgo Maggiore"
+              onChange={val => { setPartenza(val); setPartenzaCoord(null) }}
+              onSelect={({ indirizzo, latitudine, longitudine }) => {
+                setPartenza(indirizzo)
+                if (latitudine && longitudine) {
+                  setPartenzaCoord({ lat: latitudine, lng: longitudine })
+                }
+              }}
+              placeholder="Cerca indirizzo di partenza..."
             />
             <div className="grid grid-cols-2 gap-2">
               <div>

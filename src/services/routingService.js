@@ -32,46 +32,24 @@ export async function geocodificaTutte(localita, onProgress) {
   return risultati
 }
 
-export async function ottimizzaPercorso(localitaConCoord) {
-  const valide = localitaConCoord.filter(l => l.lat && l.lng)
-  if (valide.length < 2) return valide.map(l => l.id)
-
-  const coordinates = valide.map(l => `${l.lng},${l.lat}`).join(';')
-
-  try {
-    const res = await fetch(
-      `${OSRM_URL}/trip/v1/driving/${coordinates}?source=first&roundtrip=false&destination=last&overview=false`
-    )
-    const data = await res.json()
-
-    if (data.code === 'Ok' && data.trips && data.trips[0]) {
-      const waypoints = data.waypoints
-      const ordineIndici = waypoints
-        .sort((a, b) => a.waypoint_index - b.waypoint_index)
-        .map(w => w.waypoint_index)
-
-      const ordinato = new Array(valide.length)
-      waypoints.forEach(wp => {
-        ordinato[wp.waypoint_index] = valide[wp.trips_index !== undefined ? wp.trips_index : waypoints.indexOf(wp)]
-      })
-
-      return data.trips[0].legs
-        ? waypoints
-            .sort((a, b) => a.waypoint_index - b.waypoint_index)
-            .map(wp => valide[wp.trips_index !== undefined ? wp.trips_index : waypoints.indexOf(wp)].id)
-        : valide.map(l => l.id)
-    }
-  } catch (e) {
-    console.warn('OSRM non disponibile, uso ordine originale:', e)
-  }
-
-  return valide.map(l => l.id)
-}
-
+/**
+ * Chiama OSRM /trip per ottimizzare l'ordine di visita.
+ *
+ * OSRM waypoints response:
+ * - Ogni waypoint ha un campo "waypoint_index" che indica la posizione
+ *   nell'ordine ottimizzato del viaggio.
+ * - L'array waypoints è nello stesso ordine dell'input (indice 0 = primo punto inviato).
+ *
+ * Per ricostruire l'ordine: ordiniamo i waypoint per waypoint_index,
+ * e per ognuno recuperiamo l'elemento originale tramite la posizione nell'array.
+ */
 export async function calcolaPercorsoOttimizzato(localitaConCoord) {
   const valide = localitaConCoord.filter(l => l.lat && l.lng)
-  if (valide.length < 2) return { ordine: valide.map(l => l.id), distanzaTotale: 0, durataTotale: 0 }
+  if (valide.length < 2) {
+    return { ordine: valide.map(l => l.id), distanzaTotale: 0, durataTotale: 0 }
+  }
 
+  // OSRM vuole lng,lat (NON lat,lng)
   const coordinates = valide.map(l => `${l.lng},${l.lat}`).join(';')
 
   try {
@@ -82,9 +60,19 @@ export async function calcolaPercorsoOttimizzato(localitaConCoord) {
 
     if (data.code === 'Ok' && data.trips && data.trips[0]) {
       const trip = data.trips[0]
-      const ordine = data.waypoints
-        .sort((a, b) => a.waypoint_index - b.waypoint_index)
-        .map(wp => valide[wp.trips_index !== undefined ? wp.trips_index : data.waypoints.indexOf(wp)].id)
+
+      // data.waypoints è nello stesso ordine dell'input.
+      // Ogni waypoint ha waypoint_index = posizione nel viaggio ottimizzato.
+      // Creiamo un array di coppie [waypoint_index, indice_originale]
+      // e ordiniamo per waypoint_index.
+      const coppie = data.waypoints.map((wp, idxOriginale) => ({
+        waypoint_index: wp.waypoint_index,
+        idxOriginale,
+      }))
+
+      coppie.sort((a, b) => a.waypoint_index - b.waypoint_index)
+
+      const ordine = coppie.map(c => valide[c.idxOriginale].id)
 
       return {
         ordine,
@@ -93,7 +81,7 @@ export async function calcolaPercorsoOttimizzato(localitaConCoord) {
       }
     }
   } catch (e) {
-    console.warn('OSRM non disponibile:', e)
+    console.warn('OSRM non disponibile, uso ordine originale:', e)
   }
 
   return { ordine: valide.map(l => l.id), distanzaTotale: 0, durataTotale: 0 }

@@ -48,8 +48,21 @@ CREATE TABLE sessioni_consegna (
   km_percorsi DECIMAL(8,2),
   veicolo_usato TEXT,
   note_sessione TEXT,
+  fermata_idx_corrente INT DEFAULT 0,    -- v8: indice fermata corrente per ripresa
+  aggiornata_at TIMESTAMPTZ,             -- v8: timestamp ultimo update (riconciliazione cache)
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
+
+-- v8: una sola sessione APERTA per corriere
+CREATE UNIQUE INDEX IF NOT EXISTS idx_sessione_aperta_unica_corriere
+  ON sessioni_consegna (corriere_id)
+  WHERE fine_consegna IS NULL AND corriere_id IS NOT NULL;
+CREATE UNIQUE INDEX IF NOT EXISTS idx_sessione_aperta_unica_admin
+  ON sessioni_consegna ((1))
+  WHERE fine_consegna IS NULL AND corriere_id IS NULL;
+CREATE INDEX IF NOT EXISTS idx_sessione_aperta_lookup
+  ON sessioni_consegna (corriere_id, fine_consegna)
+  WHERE fine_consegna IS NULL;
 
 -- TABELLA: consegne_giornaliere
 CREATE TABLE consegne_giornaliere (
@@ -63,8 +76,12 @@ CREATE TABLE consegne_giornaliere (
   consegnato BOOLEAN DEFAULT false,
   ora_consegna TIMESTAMPTZ,
   note TEXT,
+  ordine INT,                            -- v8: ordine esplicito fermate nella sessione
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
+
+CREATE INDEX IF NOT EXISTS idx_consegne_sessione_ordine
+  ON consegne_giornaliere (sessione_id, ordine);
 
 -- TABELLA: storico_rimanenze
 CREATE TABLE storico_rimanenze (

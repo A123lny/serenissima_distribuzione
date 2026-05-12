@@ -4,12 +4,13 @@ import { useZone, useGiri } from '../hooks/useGiri'
 import {
   Plus, Edit2, Trash2, ChevronDown, ChevronUp, MapPin,
   ArrowUp, ArrowDown, UserPlus, MapPinned, Package,
-  CheckSquare, Square, Layers, Route
+  CheckSquare, Square, Layers, Route, Printer
 } from 'lucide-react'
 import Button from '../components/UI/Button'
 import Modal from '../components/UI/Modal'
 import AddressAutocomplete from '../components/UI/AddressAutocomplete'
 import Badge from '../components/UI/Badge'
+import { stampaGiroPdf } from '../utils/stampaGiroPdf'
 
 export default function GiriPage() {
   const {
@@ -397,6 +398,9 @@ export default function GiriPage() {
                       </button>
                       <button onClick={() => openAssegnaModal(giro)} className="p-1.5 hover:bg-green-50 rounded-lg text-green-600" title="Assegna corriere">
                         <UserPlus size={16} />
+                      </button>
+                      <button onClick={() => stampaGiroPdf(giro)} className="p-1.5 hover:bg-blue-50 rounded-lg text-blue-600" title="Stampa elenco PDF">
+                        <Printer size={16} />
                       </button>
                       <button onClick={() => openGiroModal(giro)} className="p-1.5 hover:bg-navy-50 rounded-lg text-terra-500" title="Modifica nome">
                         <Edit2 size={16} />

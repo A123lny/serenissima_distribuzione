@@ -5,14 +5,20 @@ import { useConsegne } from '../hooks/useConsegne'
 import { useTimer } from '../hooks/useTimer'
 import {
   Play, Square, ChevronLeft, ChevronRight, Navigation,
-  Clock, Save, MapPinned, Package, CheckCircle2, AlertCircle
+  Clock, Save, MapPinned, Package, CheckCircle2, AlertCircle,
+  RotateCcw, Cloud, CloudOff
 } from 'lucide-react'
 import Button from '../components/UI/Button'
 import Modal from '../components/UI/Modal'
 
 export default function ConsegnaPage() {
   const { utente } = useAuth()
-  const { sessione, consegne, loading, iniziaSessione, aggiornaConsegna, completaFermata, terminaSessione, annullaSessione, caricaSessioneAttiva } = useConsegne()
+  const {
+    sessione, consegne, loading, pendingSync,
+    iniziaSessione, aggiornaConsegna, completaFermata, terminaSessione,
+    annullaSessione, caricaSessioneAttiva,
+    aggiornaIndiceFermata, flushIndiceSync,
+  } = useConsegne()
   const { formato, avvia, ferma } = useTimer(sessione?.inizio_consegna)
 
   const [fase, setFase] = useState('preparazione')
@@ -37,10 +43,19 @@ export default function ConsegnaPage() {
   const [showConfirmFine, setShowConfirmFine] = useState(false)
   const [showConfirmAnnulla, setShowConfirmAnnulla] = useState(false)
   const [testoConfermaAnnulla, setTestoConfermaAnnulla] = useState('')
+  const [sessioneRipresa, setSessioneRipresa] = useState(false)
 
   useEffect(() => {
     loadInitialData()
   }, [])
+
+  const goToFermata = (newIdx) => {
+    if (newIdx < 0 || newIdx >= consegne.length) return
+    setFermataIdx(newIdx)
+    aggiornaIndiceFermata(newIdx)
+    setResiCorrente(consegne[newIdx]?.resi_ritirati || '')
+    setModificaAttiva(false)
+  }
 
   const loadInitialData = async () => {
     setPageLoading(true)
@@ -61,12 +76,65 @@ export default function ConsegnaPage() {
     setPageLoading(false)
   }
 
+  // Quando la sessione viene caricata/ricaricata, deriva fermataIdx e resi
   useEffect(() => {
-    if (sessione && !sessione.fine_consegna) {
-      setFase('consegna')
-      avvia()
+    if (!sessione || sessione.fine_consegna) return
+    setFase('consegna')
+    avvia()
+
+    if (consegne.length === 0) return
+
+    const idxDb = sessione.fermata_idx_corrente
+    let idxIniziale
+    if (typeof idxDb === 'number' && idxDb >= 0 && idxDb < consegne.length) {
+      idxIniziale = idxDb
+    } else {
+      const firstNonCompleted = consegne.findIndex(c => !c.consegnato)
+      idxIniziale = firstNonCompleted === -1 ? consegne.length - 1 : firstNonCompleted
     }
-  }, [sessione])
+    setFermataIdx(idxIniziale)
+
+    const completate = consegne.filter(c => c.consegnato).length
+    if (completate > 0 || idxIniziale > 0) setSessioneRipresa(true)
+
+    // Recupera resiCorrente in cache (digitato ma non confermato)
+    const fermata = consegne[idxIniziale]
+    if (fermata && !fermata.consegnato) {
+      try {
+        const cached = localStorage.getItem(`pending_resi_${sessione.id}_${fermata.id}`)
+        if (cached != null && cached !== '') setResiCorrente(cached)
+      } catch {}
+    }
+  }, [sessione?.id, consegne.length])
+
+  // Persistenza in localStorage del resiCorrente digitato ma non ancora confermato
+  useEffect(() => {
+    if (!sessione || !consegne[fermataIdx] || modificaAttiva) return
+    const fermata = consegne[fermataIdx]
+    if (fermata.consegnato) return
+    try {
+      if (resiCorrente === '' || resiCorrente == null) {
+        localStorage.removeItem(`pending_resi_${sessione.id}_${fermata.id}`)
+      } else {
+        localStorage.setItem(`pending_resi_${sessione.id}_${fermata.id}`, String(resiCorrente))
+      }
+    } catch {}
+  }, [resiCorrente, sessione?.id, fermataIdx, modificaAttiva])
+
+  // Listener visibility/unload: backup sincrono dell'indice in localStorage
+  useEffect(() => {
+    if (!sessione) return
+    const handleHide = () => flushIndiceSync(fermataIdx)
+    const handleVisibility = () => {
+      if (document.visibilityState === 'hidden') handleHide()
+    }
+    window.addEventListener('beforeunload', handleHide)
+    document.addEventListener('visibilitychange', handleVisibility)
+    return () => {
+      window.removeEventListener('beforeunload', handleHide)
+      document.removeEventListener('visibilitychange', handleVisibility)
+    }
+  }, [sessione?.id, fermataIdx, flushIndiceSync])
 
   // Carica zone e localita del giro selezionato (con ordine specifico del giro)
   useEffect(() => {
@@ -126,6 +194,12 @@ export default function ConsegnaPage() {
       setFase('consegna')
       setFermataIdx(0)
       setResiCorrente('')
+      setSessioneRipresa(false)
+      avvia()
+    } else if (result.error?.code === 'SESSIONE_ESISTENTE') {
+      // Una sessione era gia' aperta: caricaSessioneAttiva l'ha gia' ripristinata.
+      // L'useEffect su sessione si occupera' di portare l'utente in fase consegna.
+      setFase('consegna')
       avvia()
     }
   }
@@ -139,8 +213,14 @@ export default function ConsegnaPage() {
     if (!fermataCorrente) return
     await completaFermata(fermataCorrente.id, parseInt(resiCorrente) || 0)
     setModificaAttiva(false)
+    // Pulisci la cache resi della fermata appena confermata
+    if (sessione) {
+      try { localStorage.removeItem(`pending_resi_${sessione.id}_${fermataCorrente.id}`) } catch {}
+    }
     if (fermataIdx < consegne.length - 1) {
-      setFermataIdx(fermataIdx + 1)
+      const newIdx = fermataIdx + 1
+      setFermataIdx(newIdx)
+      aggiornaIndiceFermata(newIdx)
       setResiCorrente('')
     }
   }
@@ -158,17 +238,13 @@ export default function ConsegnaPage() {
 
   const handleAvanti = () => {
     if (fermataIdx < consegne.length - 1) {
-      setFermataIdx(fermataIdx + 1)
-      setResiCorrente(consegne[fermataIdx + 1]?.resi_ritirati || '')
-      setModificaAttiva(false)
+      goToFermata(fermataIdx + 1)
     }
   }
 
   const handleIndietro = () => {
     if (fermataIdx > 0) {
-      setFermataIdx(fermataIdx - 1)
-      setResiCorrente(consegne[fermataIdx - 1]?.resi_ritirati || '')
-      setModificaAttiva(false)
+      goToFermata(fermataIdx - 1)
     }
   }
 
@@ -189,6 +265,7 @@ export default function ConsegnaPage() {
     setFermataIdx(0)
     setResiCorrente('')
     setModificaAttiva(false)
+    setSessioneRipresa(false)
   }
 
   const chiudiConfermaAnnulla = () => {
@@ -203,6 +280,9 @@ export default function ConsegnaPage() {
     setPrepData([])
     setKmPercorsi('')
     setNoteSessione('')
+    setFermataIdx(0)
+    setResiCorrente('')
+    setSessioneRipresa(false)
   }
 
   const apriMaps = (indirizzo) => {
@@ -306,6 +386,11 @@ export default function ConsegnaPage() {
             <div className="flex items-center gap-2">
               <Clock size={18} />
               <span className="text-xl font-mono font-bold">{formato}</span>
+              {pendingSync ? (
+                <CloudOff size={14} className="text-amber-300 animate-pulse" title="Salvataggio in corso..." />
+              ) : (
+                <Cloud size={14} className="text-green-300 opacity-60" title="Sincronizzato" />
+              )}
             </div>
             <span className="text-sm opacity-80">{completate}/{consegne.length} completate</span>
           </div>
@@ -314,6 +399,20 @@ export default function ConsegnaPage() {
               style={{ width: `${consegne.length > 0 ? (completate / consegne.length) * 100 : 0}%` }} />
           </div>
         </div>
+
+        {sessioneRipresa && (
+          <div className="bg-amber-50 border-b-2 border-amber-300 px-4 py-3 flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2 text-sm text-amber-900">
+              <RotateCcw size={16} className="flex-shrink-0" />
+              <span>
+                <strong>Sessione ripresa</strong>: fermata {fermataIdx + 1} di {consegne.length}
+                {completate > 0 && <> &middot; {completate} gi&agrave; completate</>}
+              </span>
+            </div>
+            <button onClick={() => setSessioneRipresa(false)}
+              className="text-amber-700 underline text-xs flex-shrink-0">OK</button>
+          </div>
+        )}
 
         {fermataCorrente && (
           <div className="p-4 space-y-4">
